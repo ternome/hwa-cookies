@@ -596,6 +596,42 @@
       opacity:1 !important; transform:none !important;
     }
   }
+
+  /* ---- debug-панель (?cb_debug=1; в проде не рендерится) ---- */
+  #cb-debug{
+    position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:10px;
+    z-index:95; font-family:ui-monospace,Menlo,monospace;
+  }
+  #cb-debug .cbd-fab{
+    width:40px; height:40px; border-radius:50%; border:0; font-size:20px;
+    background:rgba(8,9,12,.85); cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  #cb-debug .cbd-panel{ display:none; }
+  #cb-debug.open .cbd-fab{ display:none; }
+  #cb-debug.open .cbd-panel{
+    display:block; width:238px; padding:10px; border-radius:12px;
+    background:rgba(8,9,12,.92); color:#fff; font-size:11px;
+  }
+  .cbd-head{
+    display:flex; justify-content:space-between; align-items:center;
+    font-weight:700; margin-bottom:8px; letter-spacing:.5px;
+  }
+  .cbd-x{ border:0; background:none; color:#fff; font-size:16px; cursor:pointer; padding:0 4px; }
+  .cbd-row{ display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+  .cbd-row span{ width:32px; opacity:.6; }
+  .cbd-seg{
+    flex:1; border:1px solid rgba(255,255,255,.25); background:none; color:#fff;
+    border-radius:7px; padding:4px 2px; font-size:10px; cursor:pointer;
+  }
+  .cbd-seg.on{ background:#4da400; border-color:#4da400; font-weight:700; }
+  .cbd-actions{ display:flex; gap:6px; margin:8px 0; }
+  .cbd-btn{
+    flex:1; border:0; border-radius:8px; padding:7px 0; font-size:11px; font-weight:700;
+    cursor:pointer; background:#2b6cb0; color:#fff;
+  }
+  .cbd-btn[data-cbd="show"]{ background:#4da400; }
+  .cbd-btn[data-cbd="reset"]{ background:#7b341e; }
+  .cbd-status{ opacity:.75; line-height:1.5; word-break:break-all; min-height:14px; }
 </style>
 </head>
 <body>
@@ -865,6 +901,18 @@
       document.dispatchEvent(new CustomEvent("hwa:consent", { detail: c }));
     }
 
+    var root = document.getElementById("cookie-root");
+
+    /* Debug-панель (?cb_debug=1 — липнет на вкладку, cb_debug=0 — выкл): доступна и при сохранённом согласии */
+    var dbgParam = qs.get("cb_debug");
+    try {
+      if (dbgParam === "1") sessionStorage.setItem("hwa.cb.debug", "1");
+      if (dbgParam === "0") sessionStorage.removeItem("hwa.cb.debug");
+    } catch(e){}
+    var DEBUG = false;
+    try { DEBUG = sessionStorage.getItem("hwa.cb.debug") === "1"; } catch(e){}
+    if (DEBUG) initDebug();
+
     if (consent){ notify(); return; }   // выбор уже сделан — баннер не показываем
 
     /* ---- гео: ?geo → /api/geo (кэш в sessionStorage) → таймзона → строгий дефолт ---- */
@@ -913,7 +961,6 @@
            primary: { act:"accept", label:"Accept All", cls:"primary" } }
     };
 
-    var root = document.getElementById("cookie-root");
     var TYPE = 0, COUNTRY = null, shownAt = 0, nudgeTimer = 0;
 
     function btn(b){
@@ -946,7 +993,7 @@
       root.setAttribute("data-tpl", TPL);
       root.setAttribute("data-type", String(TYPE));
       root.innerHTML = html;
-      root.addEventListener("click", onClick);
+      if (!root.cbBound){ root.cbBound = true; root.addEventListener("click", onClick); }   // build() может звать дебаг повторно
     }
 
     function onClick(ev){
@@ -996,6 +1043,7 @@
       var done = false;
       function fin(){
         if (done) return; done = true;
+        if (root.getAttribute("data-state") !== "closing") return;   // дебаг мог уже перепоказать
         root.hidden = true;
         root.setAttribute("data-state", "closed");
       }
@@ -1018,6 +1066,93 @@
       build();
       arm();
     });
+
+    /* ================= Debug-панель (только с ?cb_debug=1) ================= */
+    function initDebug(){
+      var sel = { tpl: TPL, type: "3", geo: "", at: AT };
+
+      function row(key, opts){
+        var h = '<div class="cbd-row"><span>' + key + '</span>';
+        for (var i = 0; i < opts.length; i++){
+          var on = String(sel[key]) === opts[i][1] ? " on" : "";
+          h += '<button type="button" class="cbd-seg' + on + '" data-k="' + key + '" data-v="' + opts[i][1] + '">' + opts[i][0] + '</button>';
+        }
+        return h + '</div>';
+      }
+
+      var el = document.createElement("div");
+      el.id = "cb-debug";
+      el.innerHTML =
+        '<button type="button" class="cbd-fab" aria-label="Cookie debug">🍪</button>' +
+        '<div class="cbd-panel">' +
+          '<div class="cbd-head">CB DEBUG<button type="button" class="cbd-x">×</button></div>' +
+          row("tpl",  [["t1","t1"],["t2-ios","t2-ios"]]) +
+          row("type", [["1","1"],["2","2"],["3","3"],["auto","auto"]]) +
+          row("geo",  [["DE","DE"],["US","US"],["JP","JP"],["—",""]]) +
+          row("at",   [["boot","boot"],["choice","choice"],["reveal","reveal"]]) +
+          '<div class="cbd-actions">' +
+            '<button type="button" class="cbd-btn" data-cbd="show">Show</button>' +
+            '<button type="button" class="cbd-btn" data-cbd="reset">Reset</button>' +
+            '<button type="button" class="cbd-btn" data-cbd="reload">Reload</button>' +
+          '</div>' +
+          '<div class="cbd-status"></div>' +
+        '</div>';
+      document.body.appendChild(el);
+
+      var status = el.querySelector(".cbd-status");
+      function refresh(){
+        var c = null;
+        try { c = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e){}
+        var last = window.cbEvents.length ? window.cbEvents[window.cbEvents.length - 1].name : "—";
+        status.textContent =
+          "consent: " + (c ? c.choice + " a:" + (c.cats && c.cats.analytics ? 1 : 0) + " ads:" + (c.cats && c.cats.ads ? 1 : 0) : "—") +
+          " | geo:" + (COUNTRY || "—") + " | last:" + last;
+      }
+      setInterval(refresh, 800);
+      refresh();
+
+      el.addEventListener("click", function(ev){
+        var t = ev.target;
+        if (t.classList.contains("cbd-fab") || t.classList.contains("cbd-x")){
+          el.classList.toggle("open");
+          return;
+        }
+        if (t.classList.contains("cbd-seg")){
+          var k = t.getAttribute("data-k");
+          sel[k] = t.getAttribute("data-v");
+          var sib = el.querySelectorAll('.cbd-seg[data-k="' + k + '"]');
+          for (var i = 0; i < sib.length; i++) sib[i].classList.remove("on");
+          t.classList.add("on");
+          return;
+        }
+        var act = t.getAttribute("data-cbd");
+        if (act === "reset"){
+          try { localStorage.removeItem(LS_KEY); sessionStorage.removeItem("hwa.geo"); } catch(e){}
+          consent = null;
+          refresh();
+        }
+        if (act === "show"){   // мгновенный перепоказ выбранного варианта без перезагрузки
+          try { localStorage.removeItem(LS_KEY); } catch(e){}
+          consent = null;
+          TPL = sel.tpl;
+          if (sel.geo) COUNTRY = sel.geo;
+          TYPE = sel.type === "auto" ? typeFor(sel.geo || null) : parseInt(sel.type, 10);
+          clearTimeout(nudgeTimer);
+          root.hidden = true;
+          root.setAttribute("data-state", "closed");
+          root.removeAttribute("data-view");
+          build();
+          show();
+          refresh();
+        }
+        if (act === "reload"){   // полный прогон с параметрами (проверка тайминга фаз)
+          var p = ["cb_debug=1", "cb_reset=1", "cb_tpl=" + sel.tpl, "cb_at=" + sel.at];
+          if (sel.type !== "auto") p.push("cb_type=" + sel.type);
+          if (sel.geo) p.push("geo=" + sel.geo);
+          location.href = "/?" + p.join("&");
+        }
+      });
+    }
   })();
   </script>
 </body>
