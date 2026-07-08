@@ -156,17 +156,20 @@ self-contained сохраняется.
 ---
 
 ## Порядок реализации
-1. [ ] **Каркас**: `#cookie-root`, state-машина показа, URL-параметры, storage,
+1. [x] **Каркас**: `#cookie-root`, state-машина показа, URL-параметры, storage,
    хуки фаз (`boot/choice/reveal`); проверить слой поверх BOOT / PLAYING / CHOICE / REVEAL.
-2. [ ] **t1**: type-1 пилюля, type-2 док, type-3 док+абзац; зелёная кнопка; анимации.
-3. [ ] **t2-ios**: шит + frosted (+фолбэк без `backdrop-filter`) + safe-area; анимации.
-4. [ ] **Панель настроек** (`Custom` / `Cookie Settings`): тогглы Analytics/Advertising + Save.
-5. [ ] **Гео**: `api/geo.js` + маппинг + фолбэк-цепочка + строгий дефолт.
-6. [ ] **События** (буфер) + `cbConsent`-API.
-7. [ ] **QA-матрица**: 2 шаблона × 3 типа × 3 момента показа; повторный визит
-   (не показывается); `cb_reset`; iOS Safari (blur, safe-area, Low Power Mode),
-   Android Chrome, in-app WebView (FB/TikTok); `prefers-reduced-motion`.
-8. [ ] **Деплой**: отдельный Vercel-проект на этот репозиторий, push в `main`.
+2. [x] **t1**: type-1 пилюля, type-2 док, type-3 док+абзац; зелёная кнопка; анимации.
+3. [x] **t2-ios**: шит + frosted (+фолбэк без `backdrop-filter`) + safe-area; анимации.
+4. [x] **Панель настроек** (`Custom` / `Cookie Settings`): тогглы Analytics/Advertising + Save.
+5. [x] **Гео**: `api/geo.js` + маппинг + фолбэк-цепочка + строгий дефолт.
+6. [x] **События** (буфер) + `cbConsent`-API.
+7. [~] **QA-матрица**: ✅ превью Chromium 375×812 (08.07.2026): все 6 ячеек матрицы,
+   панель настроек (open→toggles→save→consent), повторный визит (не показывается),
+   `cb_reset`, `cb_at=reveal` (баннер ждёт фазу и открывается поверх плеебла, z 90>30),
+   консоль чистая. ⏳ Осталось: реальный iOS Safari (blur, safe-area, Low Power Mode),
+   Android Chrome, in-app WebView (FB/TikTok), `prefers-reduced-motion`.
+8. [ ] **Деплой**: подключить репозиторий `ternome/hwa-cookies` к Vercel-проекту
+   (ручной шаг в дашборде); дальше push в `main` → деплой.
 
 ## Технические заметки
 - `backdrop-filter` требует `-webkit-`-дубля на iOS; `@supports not (backdrop-filter: blur(1px))`

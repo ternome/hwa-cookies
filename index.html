@@ -434,6 +434,169 @@
     #choice.mode-frame .card.sword .sword-video-frame{ display:none !important; }
   }
 </style>
+<style data-cb>
+  /* ============ COOKIE-БАННЕРЫ (эксперименты, решения — PLAN.md) ============
+     2 шаблона (t1 тёмный игровой / t2-ios нативный) × 3 типа контента.
+     Слой z:90 — поверх всех фаз, включая развёрнутый плеебл (max z базы = 30). */
+  #cookie-root{ position:fixed; inset:0; z-index:90; pointer-events:none; }
+  #cookie-root[hidden]{ display:none; }
+
+  .cb-scrim{
+    position:absolute; inset:0; background:rgba(10,12,16,.30);
+    opacity:0; pointer-events:auto;    /* рендерится только у t2-ios×type-3 (GDPR) */
+    transition:opacity .2s ease-in;
+  }
+  #cookie-root[data-state="open"] .cb-scrim{ opacity:1; transition:opacity .24s ease-out; }
+
+  .cb{ position:absolute; pointer-events:auto; color:#fff; }
+  .cb-text{ margin:0; font-size:14px; line-height:1.45; }
+  .cb-text a{ color:inherit; text-decoration:underline; text-underline-offset:2px; }
+  .cb-row{ display:flex; gap:10px; margin-bottom:10px; }
+  .cb-btn{
+    display:block; border:0; margin:0; cursor:pointer; font:inherit;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #cookie-root[data-type="2"] .cb-text,
+  #cookie-root[data-type="3"] .cb-text{ margin:0 0 12px; }
+  #cookie-root[data-type="3"] .cb-row .cb-btn{ flex:1; }
+
+  /* ---- type-1: компактная пилюля сверху ---- */
+  #cookie-root[data-type="1"] .cb{
+    top:calc(14px + env(safe-area-inset-top, 0px)); left:12px; right:12px;
+    margin:0 auto; width:max-content; max-width:calc(100vw - 24px);
+    display:flex; align-items:center; gap:14px;
+    padding:9px 9px 9px 16px; border-radius:14px;
+    opacity:0; transform:translateY(-14px) scale(.96);
+    transition:transform .18s ease-in, opacity .18s ease-in;
+  }
+  #cookie-root[data-type="1"][data-state="open"] .cb{
+    opacity:1; transform:none;   /* лёгкий overshoot на входе */
+    transition:transform .28s cubic-bezier(.34,1.56,.64,1), opacity .2s ease-out;
+  }
+
+  /* ---- type-2/3: нижняя панель, выезжает снизу ---- */
+  #cookie-root[data-type="2"] .cb,
+  #cookie-root[data-type="3"] .cb{
+    left:10px; right:10px; bottom:calc(10px + env(safe-area-inset-bottom, 0px));
+    transform:translateY(calc(100% + 60px + env(safe-area-inset-bottom, 0px)));
+    transition:transform .26s ease-in;
+  }
+  #cookie-root[data-type="2"][data-state="open"] .cb,
+  #cookie-root[data-type="3"][data-state="open"] .cb{ transform:translateY(0); }
+  /* изинг входа: t1 — easeOutQuint-подобный, t2-ios — iOS-морф */
+  #cookie-root[data-tpl="t1"][data-state="open"] .cb{
+    transition:transform .38s cubic-bezier(.22,1,.36,1);
+  }
+  #cookie-root[data-tpl="t2-ios"][data-state="open"] .cb{
+    transition:transform .44s cubic-bezier(.32,.72,0,1);
+  }
+  /* stagger кнопок панели на входе */
+  #cookie-root[data-type="2"] .cb-main .cb-btn,
+  #cookie-root[data-type="3"] .cb-main .cb-btn{
+    opacity:0; transform:translateY(8px);
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  #cookie-root[data-type="2"][data-state="open"] .cb-main .cb-btn,
+  #cookie-root[data-type="3"][data-state="open"] .cb-main .cb-btn{
+    opacity:1; transform:none;
+    transition:opacity .25s ease-out .1s, transform .25s ease-out .1s;
+  }
+  #cookie-root[data-state="open"] .cb-main .cb-btn.primary{ transition-delay:.16s; }
+
+  /* ---- шаблон t1: тёмный игровой ---- */
+  #cookie-root[data-tpl="t1"] .cb{
+    background:rgba(8,9,12,.86); border-radius:16px;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  }
+  #cookie-root[data-tpl="t1"][data-type="2"] .cb,
+  #cookie-root[data-tpl="t1"][data-type="3"] .cb{ padding:12px; }
+  #cookie-root[data-tpl="t1"] .cb-btn.ok{
+    background:#17181d; color:#fff; font-weight:700; font-size:14px;
+    padding:8px 18px; border-radius:10px; border:1px solid rgba(255,255,255,.08);
+  }
+  #cookie-root[data-tpl="t1"] .cb-btn.ghost{
+    background:none; border:1px solid rgba(255,255,255,.35); color:#fff;
+    border-radius:10px; padding:9px 14px; font-size:13px; font-weight:600; white-space:nowrap;
+  }
+  #cookie-root[data-tpl="t1"] .cb-btn.primary{
+    width:100%; padding:14px; border-radius:12px;
+    font-size:17px; font-weight:800; color:#fff; letter-spacing:.3px;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+    background:linear-gradient(180deg,#a6e34d 0%,#6cc318 45%,#4da400 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.18),
+               0 4px 12px rgba(46,125,0,.35);
+  }
+  .cb-top{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .cb-top .cb-text{ flex:1; margin:0; }
+  .cb-top .cb-row{ margin:0; }
+
+  /* ---- шаблон t2-ios: нативный frosted ---- */
+  #cookie-root[data-tpl="t2-ios"] .cb{
+    color:#111;
+    background:rgba(247,247,249,.78);
+    -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%);
+    box-shadow:0 10px 40px rgba(0,0,0,.22);
+  }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    #cookie-root[data-tpl="t2-ios"] .cb{ background:rgba(246,246,248,.97); }
+  }
+  #cookie-root[data-tpl="t2-ios"][data-type="2"] .cb,
+  #cookie-root[data-tpl="t2-ios"][data-type="3"] .cb{ border-radius:22px; padding:18px 14px 14px; }
+  #cookie-root[data-tpl="t2-ios"] .cb-text{
+    font-size:15px; line-height:1.4; color:#26262a; letter-spacing:-.1px;
+  }
+  #cookie-root[data-tpl="t2-ios"] .cb-btn.ok{
+    background:rgba(120,120,128,.14); color:#0A7CFF; font-weight:600; font-size:15px;
+    padding:8px 18px; border-radius:10px;
+  }
+  #cookie-root[data-tpl="t2-ios"] .cb-btn.ghost{
+    flex:1; background:rgba(120,120,128,.16); color:#111; border-radius:12px;
+    padding:12px 8px; font-size:15px; font-weight:600; white-space:nowrap;
+  }
+  #cookie-root[data-tpl="t2-ios"] .cb-btn.primary{
+    width:100%; padding:15px; border-radius:14px; background:#0A7CFF; color:#fff;
+    font-size:17px; font-weight:600;
+  }
+
+  /* ---- панель настроек (Custom / Cookie Settings) ---- */
+  .cb-set{ display:none; }
+  #cookie-root[data-view="set"] .cb-main{ display:none; }
+  #cookie-root[data-view="set"] .cb-set{ display:block; animation:cb-fade .2s ease; }
+  @keyframes cb-fade{ from{ opacity:0 } to{ opacity:1 } }
+  .cb-title{ margin:0 0 2px; font-size:15px; font-weight:700; }
+  .cb-note{ margin:0 0 8px; font-size:12px; opacity:.7; }
+  .cb-tgl{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:9px 0; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .cb-tgl input{ position:absolute; opacity:0; pointer-events:none; }
+  .cb-tgl i{
+    flex:none; width:51px; height:31px; border-radius:16px;
+    background:rgba(120,120,128,.35); position:relative; transition:background .2s ease;
+  }
+  .cb-tgl i::after{
+    content:""; position:absolute; top:2px; left:2px; width:27px; height:27px;
+    border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,.25);
+    transition:transform .2s ease;
+  }
+  .cb-tgl input:checked + i{ background:#34C759; }
+  .cb-tgl input:checked + i::after{ transform:translateX(20px); }
+  .cb-set .cb-btn.primary{ margin-top:10px; }
+
+  /* idle-nudge главной кнопки (опция эксперимента) */
+  @keyframes cb-nudge{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.03) } }
+  .cb-btn.nudge{ animation:cb-nudge .9s ease-in-out 2; }
+
+  @media (prefers-reduced-motion: reduce){
+    #cookie-root .cb{ transition:opacity .15s linear !important; transform:none !important; }
+    #cookie-root:not([data-state="open"]) .cb{ opacity:0 !important; }
+    #cookie-root[data-state="open"] .cb{ opacity:1 !important; }
+    #cookie-root .cb-btn{
+      animation:none !important; transition:none !important;
+      opacity:1 !important; transform:none !important;
+    }
+  }
+</style>
 </head>
 <body>
   <!-- Heavy playable: starts loading in the background while the video plays -->
@@ -513,6 +676,9 @@
 
   <div id="loader"><div class="spinner"></div></div>
 
+  <!-- Cookie-баннер (эксперименты): контент собирает JS по матрице шаблон×тип, см. PLAN.md -->
+  <div id="cookie-root" data-state="closed" hidden></div>
+
   <script>
   (function(){
     var PLAYABLE_URL = "https://heroesweb-a.akamaihd.net/i/playables/playables/hw/pldungeonroof23a.html";
@@ -551,6 +717,7 @@
       choiceShown = true;
       choice.setAttribute("aria-hidden", "false");
       choice.classList.add("show");
+      document.dispatchEvent(new CustomEvent("hwa:choice"));   // фазовый хук (cookie: cb_at=choice)
       if (typeof syncVideos === "function") syncVideos();   // start the active VFX video now (not during load)
     }
     video.addEventListener("ended", showChoice);
@@ -582,6 +749,7 @@
       startPlayableLoad();              // safety
       iframe.classList.add("reveal");
       preloader.classList.add("gone");
+      document.dispatchEvent(new CustomEvent("hwa:reveal"));   // фазовый хук (cookie: cb_at=reveal)
       if (!playableReady) showLoader(); // brief spinner only if not ready yet
     }
 
@@ -648,6 +816,208 @@
     }
 
     setMode("frame");   // Pavel flame-frame video is the look; error handler falls back to "css".
+  })();
+  </script>
+
+  <script data-cb>
+  /* ===== Cookie-баннеры (эксперименты). Матрица, гео и решения — PLAN.md =====
+     Параметры QA: ?cb=0 | cb_tpl=t1|t2-ios | cb_type=1|2|3 | cb_at=boot|choice|reveal
+                   | geo=XX | cb_reset=1 */
+  (function(){
+    var qs;
+    try { qs = new URLSearchParams(location.search); } catch(e){ return; }
+    if (qs.get("cb") === "0") return;
+
+    var LS_KEY = "hwa.cc.v1";
+    var POLICY_URL = "https://example.com/privacy"; /* TODO: реальный URL политики (PLAN, вопрос №2) */
+
+    /* Гео → тип. Черновые списки — сверить с комплаенсом (PLAN, вопрос №1). */
+    var GDPR   = "AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO GB CH".split(" ");
+    var OPTOUT = ["US"];
+
+    var TPL = qs.get("cb_tpl") === "t2-ios" ? "t2-ios" : "t1";
+    var AT  = ["boot","choice","reveal"].indexOf(qs.get("cb_at")) >= 0 ? qs.get("cb_at") : "boot";
+
+    window.cbEvents = window.cbEvents || [];   /* буфер до выбора трекера (PLAN, вопрос №5) */
+    function track(name, data){
+      var e = { name:name, ts:Date.now() };
+      for (var k in data) e[k] = data[k];
+      window.cbEvents.push(e);
+      try { console.debug("[cb]", name, JSON.stringify(data || {})); } catch(err){}
+    }
+
+    var consent = null;
+    try { consent = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e){}
+    if (qs.get("cb_reset") === "1"){
+      consent = null;
+      try { localStorage.removeItem(LS_KEY); } catch(e){}
+    }
+
+    /* Публичное API для будущих пикселей: инициализация только при cats.*===true */
+    var listeners = [];
+    window.cbConsent = {
+      get: function(){ return consent ? JSON.parse(JSON.stringify(consent)) : null; },
+      onChange: function(fn){ listeners.push(fn); if (consent) fn(window.cbConsent.get()); }
+    };
+    function notify(){
+      var c = window.cbConsent.get();
+      for (var i = 0; i < listeners.length; i++){ try { listeners[i](c); } catch(e){} }
+      document.dispatchEvent(new CustomEvent("hwa:consent", { detail: c }));
+    }
+
+    if (consent){ notify(); return; }   // выбор уже сделан — баннер не показываем
+
+    /* ---- гео: ?geo → /api/geo (кэш в sessionStorage) → таймзона → строгий дефолт ---- */
+    function detectCountry(cb){
+      var forced = qs.get("geo");
+      if (forced) return cb(forced.toUpperCase());
+      var cached = null;
+      try { cached = sessionStorage.getItem("hwa.geo"); } catch(e){}
+      if (cached) return cb(cached === "?" ? null : cached);
+      if (!window.fetch) return cb(null);
+      var done = false;
+      function fin(c){
+        if (done) return; done = true;
+        try { sessionStorage.setItem("hwa.geo", c || "?"); } catch(e){}
+        cb(c);
+      }
+      setTimeout(function(){ fin(null); }, 1500);   // не задерживаем показ из-за сети
+      fetch("/api/geo")
+        .then(function(r){ return r.json(); })
+        .then(function(j){ fin(j && j.country ? String(j.country).toUpperCase() : null); })
+        .catch(function(){ fin(null); });
+    }
+    function typeFor(country){
+      if (country){
+        if (GDPR.indexOf(country) >= 0) return 3;
+        if (OPTOUT.indexOf(country) >= 0) return 2;
+        return 1;
+      }
+      var tz = "";
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch(e){}
+      if (/^America\//.test(tz)) return 2;
+      if (tz && !/^Europe\//.test(tz)) return 1;
+      return 3;   // Европа или неизвестно → строжайший тип (комплаенс-safe)
+    }
+
+    /* ---- контент (тексты — по макетам Frame 1713/1714/1715) ---- */
+    var COPY = {
+      1: { text: 'We use <a>cookies</a>',
+           primary: { act:"ok", label:"OK", cls:"ok" } },
+      2: { text: 'We use cookies. <a>Learn&nbsp;more</a>',
+           ghosts: [ { act:"custom", label:"Custom" }, { act:"essentials", label:"Essential" } ],
+           primary: { act:"accept", label:"Accept all", cls:"primary" } },
+      3: { text: 'We use essential cookies to keep the game running. With your consent, ' +
+                 'we also use analytics and advertising cookies to improve performance and personalize ads.',
+           ghosts: [ { act:"custom", label:"Cookie Settings" }, { act:"essentials", label:"Essentials only" } ],
+           primary: { act:"accept", label:"Accept All", cls:"primary" } }
+    };
+
+    var root = document.getElementById("cookie-root");
+    var TYPE = 0, COUNTRY = null, shownAt = 0, nudgeTimer = 0;
+
+    function btn(b){
+      return '<button type="button" class="cb-btn ' + (b.cls || "ghost") + '" data-act="' + b.act + '">' + b.label + '</button>';
+    }
+    function build(){
+      var c = COPY[TYPE];
+      var text = '<p class="cb-text">' +
+        c.text.replace('<a>', '<a href="' + POLICY_URL + '" target="_blank" rel="noopener" data-act="more">') +
+        '</p>';
+      var html;
+      if (TYPE === 1){
+        html = '<section class="cb" role="dialog" aria-label="Cookies">' + text + btn(c.primary) + '</section>';
+      } else {
+        var ghosts = '<div class="cb-row">' + c.ghosts.map(btn).join("") + '</div>';
+        var main = (TPL === "t1" && TYPE === 2)
+          ? '<div class="cb-top">' + text + ghosts + '</div>' + btn(c.primary)   // компакт: текст и кнопки в строку (Frame 1714)
+          : text + ghosts + btn(c.primary);
+        var set =
+          '<div class="cb-set">' +
+            '<p class="cb-title">Cookie preferences</p>' +
+            '<p class="cb-note">Essential cookies are always on — the game can\'t run without them.</p>' +
+            '<label class="cb-tgl">Analytics<input type="checkbox" checked data-cat="analytics"><i></i></label>' +
+            '<label class="cb-tgl">Advertising<input type="checkbox" checked data-cat="ads"><i></i></label>' +
+            btn({ act:"save", label:"Save", cls:"primary" }) +
+          '</div>';
+        var scrim = (TPL === "t2-ios" && TYPE === 3) ? '<div class="cb-scrim"></div>' : "";   // блок игры — только GDPR-шит
+        html = scrim + '<section class="cb" role="dialog" aria-label="Cookies"><div class="cb-main">' + main + '</div>' + set + '</section>';
+      }
+      root.setAttribute("data-tpl", TPL);
+      root.setAttribute("data-type", String(TYPE));
+      root.innerHTML = html;
+      root.addEventListener("click", onClick);
+    }
+
+    function onClick(ev){
+      var t = ev.target.closest ? ev.target.closest("[data-act]") : null;
+      if (!t) return;
+      var act = t.getAttribute("data-act");
+      if (act === "more"){ track("cb_learn_more", { tpl:TPL, type:TYPE }); return; }   // ссылка откроется сама
+      if (act === "custom"){
+        root.setAttribute("data-view", "set");
+        track("cb_settings_open", { tpl:TPL, type:TYPE });
+        return;
+      }
+      if (act === "ok")         return finish("ok",         { analytics:true,  ads:true  });
+      if (act === "accept")     return finish("accept_all", { analytics:true,  ads:true  });
+      if (act === "essentials") return finish("essentials", { analytics:false, ads:false });
+      if (act === "save"){
+        var cats = { analytics:false, ads:false };
+        var boxes = root.querySelectorAll(".cb-tgl input");
+        for (var i = 0; i < boxes.length; i++) cats[boxes[i].getAttribute("data-cat")] = boxes[i].checked;
+        return finish("custom_save", cats);
+      }
+    }
+
+    function finish(choice, cats){
+      consent = { v:1, ts:Date.now(), country:COUNTRY, tpl:TPL, type:TYPE, choice:choice, cats:cats };
+      try { localStorage.setItem(LS_KEY, JSON.stringify(consent)); } catch(e){}
+      track("cb_action", { action:choice, tpl:TPL, type:TYPE, ms: shownAt ? Date.now() - shownAt : null });
+      notify();
+      hide();
+    }
+
+    function show(){
+      root.hidden = false;
+      void root.offsetWidth;                     // reflow → транзишен идёт со стартовой позиции
+      root.setAttribute("data-state", "open");
+      shownAt = Date.now();
+      track("cb_impression", { tpl:TPL, type:TYPE, at:AT, geo:COUNTRY });
+      var primary = root.querySelector(".cb-btn.primary, .cb-btn.ok");
+      if (TYPE === 3 && primary){ try { primary.focus({ preventScroll:true }); } catch(e){} }
+      nudgeTimer = setTimeout(function(){ if (primary) primary.classList.add("nudge"); }, 6000);
+      root.addEventListener("pointerdown", function(){ clearTimeout(nudgeTimer); }, { once:true });
+    }
+
+    function hide(){
+      clearTimeout(nudgeTimer);
+      root.setAttribute("data-state", "closing");
+      var done = false;
+      function fin(){
+        if (done) return; done = true;
+        root.hidden = true;
+        root.setAttribute("data-state", "closed");
+      }
+      root.addEventListener("transitionend", fin, { once:true });
+      setTimeout(fin, 600);   // страховка, если транзишен не долетел
+    }
+
+    /* показ по фазе: boot — сразу; choice/reveal — по хукам из кода прелоадера */
+    function arm(){
+      if (AT === "boot") return void setTimeout(show, 400);
+      var evName = AT === "choice" ? "hwa:choice" : "hwa:reveal";
+      var delay  = AT === "choice" ? 500 : 400;   // не деремся с scale-in карточек
+      document.addEventListener(evName, function(){ setTimeout(show, delay); }, { once:true });
+    }
+
+    detectCountry(function(country){
+      COUNTRY = country;
+      var forcedType = parseInt(qs.get("cb_type"), 10);
+      TYPE = (forcedType >= 1 && forcedType <= 3) ? forcedType : typeFor(country);
+      build();
+      arm();
+    });
   })();
   </script>
 </body>
