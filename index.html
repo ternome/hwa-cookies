@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Hero Wars Alliance</title>
+<link rel="preconnect" href="https://heroesweb-a.akamaihd.net" crossorigin>
+<link rel="dns-prefetch" href="https://heroesweb-a.akamaihd.net">
+<style>
+  :root{
+    --card-w: 40vw;
+    --card-max: 190px;
+    --gap: 6vw;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; height:100%; background:#000; overflow:hidden;
+    overscroll-behavior:none; touch-action:manipulation;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+
+  /* Playable (loads in background, revealed on click) */
+  #playable{
+    position:fixed; inset:0; width:100%; height:100%; border:0; background:#000;
+    opacity:0; pointer-events:none; z-index:1;
+    transition:opacity .3s ease;
+  }
+  #playable.reveal{ opacity:1; pointer-events:auto; z-index:30; }
+
+  /* Preloader layer */
+  #preloader{
+    position:fixed; inset:0; z-index:10; background:#000;
+    transition:opacity .35s ease;
+  }
+  #preloader.gone{ opacity:0; pointer-events:none; }
+  #video{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* Choice overlay */
+  #choice{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .4s ease;
+  }
+  #choice.show{ opacity:1; pointer-events:auto; }
+  #choice .dim{
+    position:absolute; inset:0;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,.86));
+  }
+
+  .cards{
+    position:relative; display:flex; gap:var(--gap);
+    align-items:center; transform:translateY(-3%);
+  }
+  .card{
+    position:relative; border:0; background:none; padding:0; margin:0;
+    width:var(--card-w); max-width:var(--card-max); cursor:pointer;
+    opacity:0; transition:transform .1s ease;
+  }
+  .card img{ width:100%; height:auto; display:block; border-radius:16px; }
+  .card:active{ transform:scale(.95) !important; }
+
+  #choice.show .card.fire{
+    animation: pop .45s cubic-bezier(.2,1.3,.4,1) .05s forwards,
+               glowFire 2.6s ease-in-out .6s infinite;
+  }
+  #choice.show .card.sword{
+    animation: pop .45s cubic-bezier(.2,1.3,.4,1) .18s forwards,
+               glowSword 2.6s ease-in-out .75s infinite;
+  }
+
+  /* "Best choice" badge on the sword card */
+  .badge{
+    position:absolute; top:-12px; right:-10px; z-index:2;
+    display:flex; align-items:center; gap:4px; white-space:nowrap;
+    background:linear-gradient(#69c52f,#3f9a16); color:#fff;
+    font-weight:800; font-size:11px; letter-spacing:.2px;
+    padding:5px 10px; border-radius:20px;
+    border:2px solid rgba(255,255,255,.9);
+    box-shadow:0 3px 7px rgba(0,0,0,.45);
+    transform:rotate(-7deg); opacity:0;
+  }
+  .badge svg{ width:13px; height:13px; fill:#fff; }
+  #choice.show .badge{ animation: badgePop .4s cubic-bezier(.2,1.7,.4,1) .5s both; }
+
+  .cta{
+    position:absolute; bottom:8.5%; left:0; right:0; text-align:center;
+    color:#f1f1f1; font-weight:800; font-style:italic;
+    font-size:clamp(22px, 7.2vw, 40px); letter-spacing:.5px;
+    text-shadow:0 2px 2px rgba(0,0,0,.55), 0 0 14px rgba(0,0,0,.6);
+    opacity:0;
+  }
+  #choice.show .cta{ animation: ctaIn .5s ease .35s both; }
+
+  /* Reveal spinner (only if playable not ready yet on click) */
+  #loader{
+    position:fixed; inset:0; z-index:25; display:none;
+    align-items:center; justify-content:center; background:#000;
+  }
+  #loader.show{ display:flex; }
+  .spinner{
+    width:54px; height:54px; border-radius:50%;
+    border:5px solid rgba(255,255,255,.18); border-top-color:#fff;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes pop{
+    from{ opacity:0; transform:translateY(16px) scale(.82); }
+    to  { opacity:1; transform:translateY(0)    scale(1);   }
+  }
+  @keyframes badgePop{
+    from{ opacity:0; transform:rotate(-7deg) scale(.4); }
+    to  { opacity:1; transform:rotate(-7deg) scale(1);  }
+  }
+  @keyframes ctaIn{
+    from{ opacity:0; transform:translateY(10px); }
+    to  { opacity:1; transform:translateY(0);    }
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @keyframes glowFire{
+    0%,100%{ filter:drop-shadow(0 9px 16px rgba(0,0,0,.5)) drop-shadow(0 0 6px rgba(255,170,40,0)); }
+    50%    { filter:drop-shadow(0 9px 16px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(255,170,40,.6)); }
+  }
+  @keyframes glowSword{
+    0%,100%{ filter:drop-shadow(0 9px 16px rgba(0,0,0,.5)) drop-shadow(0 0 6px rgba(90,170,255,0)); }
+    50%    { filter:drop-shadow(0 9px 16px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(90,170,255,.6)); }
+  }
+
+  /* ============================================================
+     SWORD CARD — Tier-1 overlay effects (synthesized, hardened).
+     Scoped to #choice.show .card.sword: FIRE untouched, runs only
+     during CHOICE (cards hidden on reveal). Every overlay layer is
+     pointer-events:none so the whole <button> stays tappable.
+     No new transform/filter animation on .card itself (it already
+     owns transform via pop+:active and filter via glowSword) — the
+     float lives on <img>; aura/glint/sparkles animate only
+     opacity / transform (non-.card nodes) / background-position.
+     Layering: aura ::before (z0) -> img (z1) -> glint ::after (z2)
+     -> sparkles (z2) -> badge (z3, stays readable on top).
+     ============================================================ */
+  #choice.show .card.sword{ isolation:isolate; }            /* keep aura + screen-blend inside the card's stacking context */
+  #choice.show .card.sword img{ position:relative; z-index:1; }
+  #choice.show .card.sword .badge{ z-index:3; }             /* glint must not wash out the green badge */
+
+  /* D. Gentle float — on <img> ONLY (never on .card). */
+  #choice.show .card.sword img{
+    will-change:transform;
+    -webkit-animation: swordBob 4.2s ease-in-out 1s infinite;
+            animation: swordBob 4.2s ease-in-out 1s infinite;
+  }
+  @-webkit-keyframes swordBob{ 0%,100%{ -webkit-transform:translateY(0); } 50%{ -webkit-transform:translateY(-3px); } }
+  @keyframes swordBob{
+    0%,100%{ -webkit-transform:translateY(0);    transform:translateY(0); }
+    50%    { -webkit-transform:translateY(-3px); transform:translateY(-3px); }
+  }
+
+  /* C. Breathing aura — radial blue glow UNDER the card (behind img).
+     Confined to 114% so it can't touch the FIRE card across the gap. */
+  #choice.show .card.sword::before{
+    content:""; position:absolute; z-index:0;
+    left:50%; top:52%; width:114%; height:114%;
+    -webkit-transform:translate(-50%,-50%) scale(.84);
+            transform:translate(-50%,-50%) scale(.84);
+    background:radial-gradient(ellipse at center,
+                rgba(96,176,255,.48) 0%,
+                rgba(80,150,255,.22) 38%,
+                rgba(80,150,255,0)   68%);
+    border-radius:50%; pointer-events:none;
+    will-change:transform,opacity;
+    -webkit-animation: swordAura 3.4s ease-in-out .9s infinite;
+            animation: swordAura 3.4s ease-in-out .9s infinite;
+  }
+  @-webkit-keyframes swordAura{
+    0%,100%{ opacity:.38; -webkit-transform:translate(-50%,-50%) scale(.84); }
+    50%    { opacity:.85; -webkit-transform:translate(-50%,-50%) scale(1);   }
+  }
+  @keyframes swordAura{
+    0%,100%{ opacity:.38; -webkit-transform:translate(-50%,-50%) scale(.84); transform:translate(-50%,-50%) scale(.84); }
+    50%    { opacity:.85; -webkit-transform:translate(-50%,-50%) scale(1);   transform:translate(-50%,-50%) scale(1);   }
+  }
+
+  /* A. Glint sweep — single diagonal light streak. The gradient is the
+     ::after's own background, clipped to its border-box by border-radius
+     (a background never overflows its element — no mask/overflow hack).
+     Moved by background-position only. One quick sweep, long rest. */
+  #choice.show .card.sword::after{
+    content:""; position:absolute; z-index:2; inset:0;
+    border-radius:16px; pointer-events:none;
+    background:linear-gradient(105deg,
+                rgba(255,255,255,0)   38%,
+                rgba(210,235,255,.22) 47%,
+                rgba(235,246,255,.78) 50%,
+                rgba(210,235,255,.22) 53%,
+                rgba(255,255,255,0)   62%);
+    background-size:260% 100%; background-repeat:no-repeat;
+    background-position:160% 0;
+    mix-blend-mode:screen;
+    will-change:background-position;
+    -webkit-animation: swordGlint 5.6s ease-in-out 1.4s infinite;
+            animation: swordGlint 5.6s ease-in-out 1.4s infinite;
+  }
+  @-webkit-keyframes swordGlint{ 0%{ background-position:160% 0; } 18%{ background-position:-60% 0; } 100%{ background-position:-60% 0; } }
+  @keyframes swordGlint{ 0%{ background-position:160% 0; } 18%{ background-position:-60% 0; } 100%{ background-position:-60% 0; } }
+
+  /* B. Twinkle sparkles — 3 tiny 4-point stars, staggered, on the blade.
+     Positions tuned to the baked art (hilt lower-left -> tip upper-right,
+     SWORD label at bottom), all kept in the upper ~70%. */
+  #choice.show .card.sword .sword-spk{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+  #choice.show .card.sword .sword-spk .spk{
+    position:absolute; fill:#eaf4ff; opacity:0;
+    -webkit-filter:drop-shadow(0 0 2px rgba(150,200,255,.9));
+            filter:drop-shadow(0 0 2px rgba(150,200,255,.9));
+    -webkit-transform:scale(.4); transform:scale(.4);
+    will-change:transform,opacity;
+  }
+  #choice.show .card.sword .sword-spk .spk1{ width:14px; height:14px; top:15%; left:66%;
+    -webkit-animation: swordTwinkle 3.2s ease-in-out 1.6s infinite; animation: swordTwinkle 3.2s ease-in-out 1.6s infinite; }
+  #choice.show .card.sword .sword-spk .spk2{ width:9px; height:9px; top:58%; left:34%;
+    -webkit-animation: swordTwinkle 3.8s ease-in-out 2.7s infinite; animation: swordTwinkle 3.8s ease-in-out 2.7s infinite; }
+  #choice.show .card.sword .sword-spk .spk3{ width:8px; height:8px; top:40%; left:52%;
+    -webkit-animation: swordTwinkle 4.4s ease-in-out 3.5s infinite; animation: swordTwinkle 4.4s ease-in-out 3.5s infinite; }
+  @-webkit-keyframes swordTwinkle{
+    0%,100%{ opacity:0; -webkit-transform:scale(.4) rotate(0deg); }
+    8%     { opacity:1; -webkit-transform:scale(1)  rotate(20deg); }
+    22%    { opacity:0; -webkit-transform:scale(.5) rotate(35deg); }
+  }
+  @keyframes swordTwinkle{
+    0%,100%{ opacity:0; -webkit-transform:scale(.4) rotate(0deg);  transform:scale(.4) rotate(0deg); }
+    8%     { opacity:1; -webkit-transform:scale(1)  rotate(20deg); transform:scale(1)  rotate(20deg); }
+    22%    { opacity:0; -webkit-transform:scale(.5) rotate(35deg); transform:scale(.5) rotate(35deg); }
+  }
+
+  /* ============================================================
+     SWORD CARD — PURPLE "THE PICK" CONTOUR (technique: svg-stroke).
+     ADDED ON TOP of the blue aura/glint/sparkle effects — none touched.
+     Scoped to #choice.show .card.sword (runs only during choice). No
+     animation targets .card itself — every purple animation lives on the
+     NEW children and touches only opacity / transform / stroke-dashoffset.
+     Layer order in the card's isolate context:
+       bloom (z:-1) -> blue aura ::before (z0) -> img (z1)
+       -> blue glint ::after + blue spk (z2) -> purple frame svg (z2)
+       -> purple sparkles (z2) -> badge (z3, stays readable).
+     viewBox 360x624 == sword.webp (verified 360x624), card img is
+     width:100%/height:auto so preserveAspectRatio="none" keeps rx=30
+     corners uniform at ~16px. Unique keyframe prefix swordFrame…
+     ============================================================ */
+
+  /* 1) OUTER BREATHING BLOOM — radiates outward, behind the art.
+        Static multi-layer box-shadow (painted once); only opacity + scale animate. */
+  #choice.show .card.sword .sword-bloom{
+    position:absolute; z-index:-1;
+    left:50%; top:50%; width:108%; height:108%;
+    border-radius:22px;
+    background:radial-gradient(ellipse at center,
+                rgba(210,75,255,.30) 0%,
+                rgba(176,38,255,.14) 46%,
+                rgba(176,38,255,0)   72%);
+    box-shadow:
+      0 0 14px 2px  rgba(210,75,255,.70),
+      0 0 30px 6px  rgba(176,38,255,.50),
+      0 0 60px 16px rgba(255,92,240,.30),
+      0 0 96px 28px rgba(176,38,255,.18);
+    pointer-events:none;
+    will-change:transform,opacity;
+    -webkit-transform:translate(-50%,-50%) scale(.9);
+            transform:translate(-50%,-50%) scale(.9);
+  }
+  /* swordFrameBloom pulse removed — the bloom is now static; the SVG contour frame
+     (.sword-frame / swordFramePulse / swordFrameRun) was removed entirely (not a fit). */
+
+  /* PURPLE PERIMETER SPARKLES — twinkle around the card edge. */
+  #choice.show .card.sword .sword-orbit{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+  #choice.show .card.sword .sword-orbit .pk{
+    position:absolute; fill:#ff7bff; opacity:0;
+    -webkit-filter:drop-shadow(0 0 3px rgba(210,75,255,.95));
+            filter:drop-shadow(0 0 3px rgba(210,75,255,.95));
+    -webkit-transform:scale(.4); transform:scale(.4);
+    will-change:transform,opacity;
+  }
+  #choice.show .card.sword .sword-orbit .pk1{ width:13px; height:13px; top:-4%;  left:74%;
+    -webkit-animation: swordFrameSpark 3.0s ease-in-out 1.2s infinite; animation: swordFrameSpark 3.0s ease-in-out 1.2s infinite; }
+  #choice.show .card.sword .sword-orbit .pk2{ width:10px; height:10px; top:24%;  left:-4%;
+    -webkit-animation: swordFrameSpark 3.6s ease-in-out 2.1s infinite; animation: swordFrameSpark 3.6s ease-in-out 2.1s infinite; }
+  #choice.show .card.sword .sword-orbit .pk3{ width:11px; height:11px; top:88%;  left:88%;
+    -webkit-animation: swordFrameSpark 3.3s ease-in-out 1.7s infinite; animation: swordFrameSpark 3.3s ease-in-out 1.7s infinite; }
+  #choice.show .card.sword .sword-orbit .pk4{ width:9px;  height:9px;  top:60%;  left:101%;
+    -webkit-animation: swordFrameSpark 4.0s ease-in-out 2.8s infinite; animation: swordFrameSpark 4.0s ease-in-out 2.8s infinite; }
+  #choice.show .card.sword .sword-orbit .pk5{ width:8px;  height:8px;  top:96%;  left:14%;
+    -webkit-animation: swordFrameSpark 3.8s ease-in-out 3.4s infinite; animation: swordFrameSpark 3.8s ease-in-out 3.4s infinite; }
+  @-webkit-keyframes swordFrameSpark{
+    0%,100%{ opacity:0; -webkit-transform:scale(.4) rotate(0deg);  }
+    10%    { opacity:1; -webkit-transform:scale(1)  rotate(25deg); }
+    26%    { opacity:0; -webkit-transform:scale(.5) rotate(45deg); }
+  }
+  @keyframes swordFrameSpark{
+    0%,100%{ opacity:0; -webkit-transform:scale(.4) rotate(0deg);  transform:scale(.4) rotate(0deg);  }
+    10%    { opacity:1; -webkit-transform:scale(1)  rotate(25deg); transform:scale(1)  rotate(25deg); }
+    26%    { opacity:0; -webkit-transform:scale(.5) rotate(45deg); transform:scale(.5) rotate(45deg); }
+  }
+
+  /* ============================================================
+     SWORD CARD — OFFERHUB-STYLE PURPLE GLOW (ported from
+     mobile-placeholder-landing's hero FX, recolored blue->magenta).
+     Technique: light .webp sprites, mix-blend-mode:screen (additive),
+     hue-rotated to magenta via --sw-tint. Rotating rays + breathing
+     organic bloom sit BEHIND the art (z:-1, radiate outward); drifting
+     spark particles float in FRONT (z:2, under the badge). All scoped
+     to #choice.show .card.sword; transform/opacity only.
+     ============================================================ */
+  #choice.show .card.sword{ --sw-tint: hue-rotate(92deg) saturate(1.7) brightness(1.12); }
+
+  /* rays + organic bloom BEHIND the art */
+  #choice.show .card.sword .sword-glowfx{ position:absolute; inset:0; z-index:-1; pointer-events:none; }
+  #choice.show .card.sword .sword-glowfx img{
+    position:absolute; left:50%; top:50%; height:auto; aspect-ratio:1/1;
+    -webkit-transform:translate(-50%,-50%); transform:translate(-50%,-50%);
+    mix-blend-mode:screen; will-change:transform,opacity;
+  }
+  /* organic energy bloom — breathes via opacity */
+  #choice.show .card.sword .sw-bloom2{
+    width:178%; opacity:.9;
+    -webkit-filter:var(--sw-tint); filter:var(--sw-tint);
+    -webkit-animation: swGlowSpot 3.6s ease-in-out infinite;
+            animation: swGlowSpot 3.6s ease-in-out infinite;
+  }
+  @-webkit-keyframes swGlowSpot{ 0%,100%{ opacity:.66; } 50%{ opacity:1; } }
+  @keyframes swGlowSpot{ 0%,100%{ opacity:.66; } 50%{ opacity:1; } }
+  /* slow rotating light rays + gentle pulse */
+  #choice.show .card.sword .sw-rays{
+    width:172%;
+    -webkit-filter:blur(1px) var(--sw-tint); filter:blur(1px) var(--sw-tint);
+    -webkit-animation: swRays 20s linear infinite;
+            animation: swRays 20s linear infinite;
+  }
+  @-webkit-keyframes swRays{
+    0%  { -webkit-transform:translate(-50%,-50%) rotate(0deg)   scale(.96); opacity:.42; }
+    50% { -webkit-transform:translate(-50%,-50%) rotate(180deg) scale(1.08); opacity:.85; }
+    100%{ -webkit-transform:translate(-50%,-50%) rotate(360deg) scale(.96); opacity:.42; }
+  }
+  @keyframes swRays{
+    0%  { -webkit-transform:translate(-50%,-50%) rotate(0deg)   scale(.96); transform:translate(-50%,-50%) rotate(0deg)   scale(.96); opacity:.42; }
+    50% { -webkit-transform:translate(-50%,-50%) rotate(180deg) scale(1.08); transform:translate(-50%,-50%) rotate(180deg) scale(1.08); opacity:.85; }
+    100%{ -webkit-transform:translate(-50%,-50%) rotate(360deg) scale(.96); transform:translate(-50%,-50%) rotate(360deg) scale(.96); opacity:.42; }
+  }
+
+  /* drifting spark particles AROUND the card (front, below the badge) */
+  #choice.show .card.sword .sword-drift{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+  #choice.show .card.sword .sword-drift .dspk{
+    position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px;
+    background:url("fx-spark-blue.webp") center/contain no-repeat;
+    mix-blend-mode:screen; opacity:0;
+    -webkit-filter:brightness(1.3) var(--sw-tint); filter:brightness(1.3) var(--sw-tint);
+    will-change:transform,opacity;
+    -webkit-animation: swDrift 4.5s ease-in-out infinite;
+            animation: swDrift 4.5s ease-in-out infinite;
+  }
+  #choice.show .card.sword .sword-drift .d1{ --x:78px;  --y:-40px; --dx:6px;  --dy:-18px; --s:1;   -webkit-animation-delay:0s;   animation-delay:0s; }
+  #choice.show .card.sword .sword-drift .d2{ --x:-72px; --y:-30px; --dx:-8px; --dy:-15px; --s:.8;  -webkit-animation-delay:1.1s; animation-delay:1.1s; }
+  #choice.show .card.sword .sword-drift .d3{ --x:88px;  --y:30px;  --dx:5px;  --dy:-18px; --s:.9;  -webkit-animation-delay:2s;   animation-delay:2s; }
+  #choice.show .card.sword .sword-drift .d4{ --x:-84px; --y:24px;  --dx:-5px; --dy:-13px; --s:.75; -webkit-animation-delay:2.8s; animation-delay:2.8s; }
+  #choice.show .card.sword .sword-drift .d5{ --x:40px;  --y:-66px; --dx:8px;  --dy:-16px; --s:.95; -webkit-animation-delay:3.6s; animation-delay:3.6s; }
+  #choice.show .card.sword .sword-drift .d6{ --x:-30px; --y:-70px; --dx:0px;  --dy:-14px; --s:1.1; -webkit-animation-delay:1.7s; animation-delay:1.7s; }
+  @-webkit-keyframes swDrift{
+    0%  { -webkit-transform:translate(var(--x),var(--y)) scale(.2); opacity:0; }
+    30% { -webkit-transform:translate(calc(var(--x) + var(--dx)*.3),calc(var(--y) + var(--dy)*.3)) scale(var(--s)); opacity:1; }
+    100%{ -webkit-transform:translate(calc(var(--x) + var(--dx)),calc(var(--y) + var(--dy))) scale(calc(var(--s)*.9)); opacity:0; }
+  }
+  @keyframes swDrift{
+    0%  { -webkit-transform:translate(var(--x),var(--y)) scale(.2); transform:translate(var(--x),var(--y)) scale(.2); opacity:0; }
+    30% { -webkit-transform:translate(calc(var(--x) + var(--dx)*.3),calc(var(--y) + var(--dy)*.3)) scale(var(--s)); transform:translate(calc(var(--x) + var(--dx)*.3),calc(var(--y) + var(--dy)*.3)) scale(var(--s)); opacity:1; }
+    100%{ -webkit-transform:translate(calc(var(--x) + var(--dx)),calc(var(--y) + var(--dy))) scale(calc(var(--s)*.9)); transform:translate(calc(var(--x) + var(--dx)),calc(var(--y) + var(--dy))) scale(calc(var(--s)*.9)); opacity:0; }
+  }
+
+  /* ============================================================
+     VIDEO VFX (Pavel's pre-rendered flame-frame VFX).
+     Toggled by a class on #choice:
+       .mode-frame — flame-frame video sits UNDER sword.webp; the
+                     css overlay fx are hidden so it reads cleanly.
+       .mode-css   — nothing overridden: the hand-built css look.
+     Default page mode is set in JS (mode-frame). Transparent video:
+     WebM/VP9 alpha (Chrome/Android) + HEVC hvc1 alpha .mp4 (iOS
+     Safari); the source is chosen in JS by platform (see isAppleWebKit).
+     ============================================================ */
+  .card.sword .sword-video{ display:none; }   /* hidden until frame mode is active */
+
+  /* hide the hand-built css overlay fx in the video (frame) mode */
+  #choice.mode-frame .card.sword::before,  #choice.mode-frame .card.sword::after,
+  #choice.mode-frame .card.sword .sword-spk,    #choice.mode-frame .card.sword .sword-bloom,
+  #choice.mode-frame .card.sword .sword-orbit,
+  #choice.mode-frame .card.sword .sword-glowfx, #choice.mode-frame .card.sword .sword-drift{
+    display:none !important;
+  }
+  /* drop the blue glowSword filter pulse in frame mode (the video carries its own glow) */
+  #choice.show.mode-frame .card.sword{
+    -webkit-animation: pop .45s cubic-bezier(.2,1.3,.4,1) .18s forwards;
+            animation: pop .45s cubic-bezier(.2,1.3,.4,1) .18s forwards;
+  }
+
+  /* MODE FRAME: flame frame behind the real sword.webp card.
+     Bright ring is ~58% of the video frame, so 176% width halos the card edge. */
+  #choice.mode-frame .card.sword img{ position:relative; z-index:1; opacity:1;
+    -webkit-animation:none; animation:none; }
+  #choice.mode-frame .card.sword .sword-video-frame{
+    display:block; position:absolute; z-index:0; pointer-events:none;
+    left:50%; top:46%; width:205%; height:auto;
+    -webkit-transform:translate(-50%,-50%); transform:translate(-50%,-50%);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #choice.show .card.fire, #choice.show .card.sword{
+      animation: pop .01s linear forwards;
+    }
+    /* Neutralize every new sword effect; leave a faint static aura so the card still reads as "the pick". */
+    #choice.show .card.sword img{ -webkit-animation:none; animation:none; }
+    #choice.show .card.sword::before,
+    #choice.show .card.sword::after{ -webkit-animation:none; animation:none; }
+    #choice.show .card.sword::before{ opacity:.5;
+      -webkit-transform:translate(-50%,-50%) scale(.95); transform:translate(-50%,-50%) scale(.95); }
+    #choice.show .card.sword::after{ opacity:0; }
+    #choice.show .card.sword .sword-spk .spk{ -webkit-animation:none; animation:none; opacity:0; }
+    /* static purple bloom behind the card */
+    #choice.show .card.sword .sword-bloom{
+      -webkit-animation:none; animation:none; opacity:.8;
+      -webkit-transform:translate(-50%,-50%) scale(1); transform:translate(-50%,-50%) scale(1); }
+    #choice.show .card.sword .sword-orbit .pk{ -webkit-animation:none; animation:none; opacity:0; }
+    /* glow FX: freeze rays + bloom to a static purple aura; hide drifting sparks */
+    #choice.show .card.sword .sw-rays,
+    #choice.show .card.sword .sw-bloom2{ -webkit-animation:none; animation:none; }
+    #choice.show .card.sword .sword-drift .dspk{ -webkit-animation:none; animation:none; opacity:0; }
+
+    /* Frame mode: JS pauses the clip (no motion); hide the paused <video> so the static
+       sword.webp card shows on its own — a clean still card with no animation. */
+    #choice.mode-frame .card.sword .sword-video-frame{ display:none !important; }
+  }
+</style>
+</head>
+<body>
+  <!-- Heavy playable: starts loading in the background while the video plays -->
+  <iframe id="playable" allow="autoplay; fullscreen" allowfullscreen scrolling="no" title="Hero Wars"></iframe>
+
+  <!-- Lightweight preloader shown instantly -->
+  <div id="preloader">
+    <video id="video" poster="poster.webp" muted playsinline webkit-playsinline preload="auto">
+      <source src="preloader.mp4" type="video/mp4">
+    </video>
+
+    <div id="choice" aria-hidden="true">
+      <div class="dim"></div>
+      <div class="cards">
+        <button class="card fire" type="button" data-weapon="fire" aria-label="Fire">
+          <img src="fire.webp" alt="Fire" draggable="false">
+        </button>
+        <button class="card sword" type="button" data-weapon="sword" aria-label="Sword">
+          <span class="badge">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21h3V9H2v12zM23 10c0-1.1-.9-2-2-2h-6.3l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.6 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+          Best choice
+          </span>
+          <img src="sword.webp" alt="Sword" draggable="false">
+
+          <!-- ===== Pavel flame-frame VFX (transparent), sits UNDER sword.webp. The right source is
+               chosen IN JS by platform: Apple/WebKit (iOS + desktop Safari) -> HEVC hvc1-alpha .mp4
+               (VideoToolbox multi-layer, PREMULTIPLIED); everyone else -> VP9-alpha .webm. We MUST pick
+               in JS, not via <source> order: modern Safari decodes VP9 but NOT its alpha, so a webm-first
+               list makes Safari paint an opaque box. NO autoplay + preload=metadata: the clip starts from
+               JS only when the choice screen appears, so it never competes for decode/bandwidth during
+               the preloader's load window. Decorative; pointer-events:none. -->
+          <video class="sword-video sword-video-frame"
+                 data-webm="cardfx-frame.webm" data-hevc="cardfx-frame.mp4"
+                 loop muted playsinline webkit-playsinline preload="metadata"
+                 disablepictureinpicture aria-hidden="true"></video>
+
+          <!-- Tier-1 sword effects: twinkle sparkles (glint + aura are pure-CSS pseudo-elements).
+               Decorative; pointer-events:none in CSS keeps the whole button tappable. -->
+          <span class="sword-spk" aria-hidden="true">
+            <svg class="spk spk1" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+            <svg class="spk spk2" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+            <svg class="spk spk3" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+          </span>
+
+          <!-- ===== PURPLE "THE PICK" CONTOUR (svg-stroke) — added ON TOP of the blue effects.
+               Decorative; aria-hidden + pointer-events:none (CSS) keep the whole button tappable. ===== -->
+          <!-- Outer breathing bloom: radiates OUTWARD behind the art (negative z inside the isolated card).
+               Bloom is now static (pulse removed). The SVG contour frame was removed (not a fit). -->
+          <span class="sword-bloom" aria-hidden="true"></span>
+          <!-- Purple perimeter sparkles twinkling around the card edge. -->
+          <span class="sword-orbit" aria-hidden="true">
+            <svg class="pk pk1" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+            <svg class="pk pk2" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+            <svg class="pk pk3" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+            <svg class="pk pk4" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+            <svg class="pk pk5" viewBox="0 0 24 24"><path d="M12 0c.7 5.2 6.1 10.6 11.3 11.3C18.1 12.3 12.7 17.7 12 24c-.7-6.3-6.1-11.7-11.3-12.7C5.9 10.6 11.3 5.2 12 0z"/></svg>
+          </span>
+
+          <!-- ===== OFFERHUB-STYLE PURPLE GLOW FX (ported from mobile-placeholder-landing,
+               blue sprites recolored -> magenta via filter; screen-blend = additive light).
+               Decorative; pointer-events:none keeps the button tappable. ===== -->
+          <!-- rotating rays + organic energy bloom BEHIND the art (z:-1) -->
+          <span class="sword-glowfx" aria-hidden="true">
+            <img class="sw-bloom2" src="glow-blue.webp" alt="" draggable="false">
+            <img class="sw-rays" src="fx-light-rays.webp" alt="" draggable="false">
+          </span>
+          <!-- drifting spark particles around the card (front, under the badge) -->
+          <span class="sword-drift" aria-hidden="true">
+            <i class="dspk d1"></i><i class="dspk d2"></i><i class="dspk d3"></i>
+            <i class="dspk d4"></i><i class="dspk d5"></i><i class="dspk d6"></i>
+          </span>
+        </button>
+      </div>
+      <div class="cta">Choose Your Weapon</div>
+    </div>
+  </div>
+
+  <div id="loader"><div class="spinner"></div></div>
+
+  <script>
+  (function(){
+    var PLAYABLE_URL = "https://heroesweb-a.akamaihd.net/i/playables/playables/hw/pldungeonroof23a.html";
+
+    var video    = document.getElementById("video");
+    var choice   = document.getElementById("choice");
+    var iframe   = document.getElementById("playable");
+    var preloader= document.getElementById("preloader");
+    var loader   = document.getElementById("loader");
+
+    var playableReady = false;   // iframe finished loading
+    var loadStarted   = false;   // iframe src assigned
+    var choiceShown   = false;
+    var revealed      = false;
+
+    // 1) Begin loading the heavy playable in the background.
+    function startPlayableLoad(){
+      if (loadStarted) return;
+      loadStarted = true;
+      iframe.src = PLAYABLE_URL;
+    }
+    iframe.addEventListener("load", function(){
+      // Only meaningful once a real src is set.
+      if (!loadStarted) return;
+      playableReady = true;
+      if (revealed) hideLoader();
+    });
+
+    // Give the small video a brief head start, then load the playable.
+    video.addEventListener("playing", startPlayableLoad, { once:true });
+    setTimeout(startPlayableLoad, 800); // safety if "playing" never fires
+
+    // 2) Show the weapon choice when the video ends.
+    function showChoice(){
+      if (choiceShown) return;
+      choiceShown = true;
+      choice.setAttribute("aria-hidden", "false");
+      choice.classList.add("show");
+      if (typeof syncVideos === "function") syncVideos();   // start the active VFX video now (not during load)
+    }
+    video.addEventListener("ended", showChoice);
+
+    // Fallback so the funnel never gets stuck (autoplay blocked / stalled).
+    var fallback = setTimeout(function(){
+      startPlayableLoad();
+      showChoice();
+    }, 5000);
+    video.addEventListener("ended", function(){ clearTimeout(fallback); });
+
+    // 3) Try to autoplay; if blocked, surface the choice without trapping the user.
+    var p = video.play();
+    if (p && typeof p.catch === "function"){
+      p.catch(function(){
+        startPlayableLoad();
+        clearTimeout(fallback);
+        setTimeout(showChoice, 1200);
+      });
+    }
+
+    // 4) On weapon tap, reveal the (pre-loaded) playable full-screen.
+    function showLoader(){ loader.classList.add("show"); }
+    function hideLoader(){ loader.classList.remove("show"); }
+
+    function reveal(){
+      if (revealed) return;
+      revealed = true;
+      startPlayableLoad();              // safety
+      iframe.classList.add("reveal");
+      preloader.classList.add("gone");
+      if (!playableReady) showLoader(); // brief spinner only if not ready yet
+    }
+
+    var cards = document.querySelectorAll(".card");
+    for (var i = 0; i < cards.length; i++){
+      cards[i].addEventListener("click", reveal);
+    }
+
+    // ---- Sword VFX: Pavel's transparent flame-frame video (mode-frame), with a hand-built
+    //      CSS fallback (mode-css) used only if the video can't play. ----
+    var swordVids = document.querySelectorAll(".sword-video");
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Pick the transparent-video codec by platform. Apple/WebKit (iOS + desktop Safari) gets the
+    // HEVC hvc1-alpha .mp4; everyone else gets the VP9-alpha .webm. (Safari decodes VP9 but ignores
+    // its alpha -> opaque box, so source-order alone can't steer it; Chrome can't do HEVC alpha.)
+    function isAppleWebKit(){
+      var ua = navigator.userAgent;
+      if (/iP(hone|ad|od)/.test(navigator.platform)) return true;               // iOS (all browsers = WebKit)
+      if (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua)) return true;    // iPadOS (reports as Mac)
+      return /Safari/.test(ua) && /Version\//.test(ua) &&
+             !/(Chrome|Chromium|CriOS|FxiOS|Edg|OPR|SamsungBrowser|Android)/.test(ua); // desktop Safari
+    }
+    var useHEVC = isAppleWebKit();
+    for (var vi = 0; vi < swordVids.length; vi++){
+      var sv = swordVids[vi];
+      sv.src = useHEVC ? sv.getAttribute("data-hevc") : sv.getAttribute("data-webm");
+    }
+
+    function syncVideos(){
+      var mode = choice.classList.contains("mode-frame") ? "frame" : "css";
+      for (var i = 0; i < swordVids.length; i++){
+        var v = swordVids[i];
+        var active = (mode === "frame" && v.classList.contains("sword-video-frame"));
+        // Play the active clip only once the choice screen is up — never during the preloader load window.
+        if (active && !reduceMotion && choiceShown){
+          var pr = v.play(); if (pr && pr.catch) pr.catch(function(){});
+        } else {
+          try { v.pause(); } catch(e){}
+        }
+      }
+    }
+
+    // Resilience: if the chosen codec can't play, try the other codec once; if that also fails,
+    // fall back to the hand-built CSS look so the sword card is never blank.
+    for (var ei = 0; ei < swordVids.length; ei++){
+      swordVids[ei].addEventListener("error", function(){
+        var alt = useHEVC ? this.getAttribute("data-webm") : this.getAttribute("data-hevc");
+        if (alt && !this.dataset.triedAlt){
+          this.dataset.triedAlt = "1";
+          this.src = alt; this.load();
+          if (choiceShown) syncVideos();
+          return;
+        }
+        if (choice.classList.contains("mode-frame")) setMode("css");
+      });
+    }
+
+    function setMode(m){
+      if (["frame","css"].indexOf(m) < 0) m = "frame";
+      choice.classList.remove("mode-frame","mode-css");
+      choice.classList.add("mode-" + m);
+      syncVideos();
+    }
+
+    setMode("frame");   // Pavel flame-frame video is the look; error handler falls back to "css".
+  })();
+  </script>
+</body>
+</html>

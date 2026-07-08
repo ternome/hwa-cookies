@@ -1,0 +1,6 @@
+# Source masters & internal docs — kept in the repo, but not part of the served site
+preload-cast.mov
+FIRE.png
+SWORD.png
+*.md
+.claude/
