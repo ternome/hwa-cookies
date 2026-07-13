@@ -459,6 +459,14 @@
   #cookie-root[data-type="2"] .cb-text,
   #cookie-root[data-type="3"] .cb-text{ margin:0 0 12px; }
   #cookie-root[data-type="3"] .cb-row .cb-btn{ flex:1; }
+  /* type-2: обе кнопки в один ряд (прод-скрин) */
+  #cookie-root[data-type="2"] .cb-row{ margin-bottom:0; }
+  #cookie-root[data-type="2"] .cb-row .cb-btn{ flex:1; }
+  #cookie-root[data-type="2"] .cb-row .cb-btn.primary{ width:auto; }
+  #cookie-root[data-tpl="t1"][data-type="2"] .cb-btn.ghost{ padding:13px 8px; font-size:14px; white-space:normal; }
+  #cookie-root[data-tpl="t1"][data-type="2"] .cb-btn.primary{ padding:13px 8px; font-size:16px; }
+  #cookie-root[data-tpl="t2-ios"][data-type="2"] .cb-btn.ghost{ white-space:normal; }
+  #cookie-root[data-tpl="t2-ios"][data-type="2"] .cb-btn.primary{ padding:12px 8px; font-size:16px; }
 
   /* ---- type-1: компактная пилюля сверху ---- */
   #cookie-root[data-type="1"] .cb{
@@ -526,10 +534,6 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.18),
                0 4px 12px rgba(46,125,0,.35);
   }
-  .cb-top{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-  .cb-top .cb-text{ flex:1; margin:0; }
-  .cb-top .cb-row{ margin:0; }
-
   /* ---- шаблон t2-ios: нативный frosted ---- */
   #cookie-root[data-tpl="t2-ios"] .cb{
     color:#111;
@@ -558,13 +562,7 @@
     font-size:17px; font-weight:600;
   }
 
-  /* ---- панель настроек (Custom / Cookie Settings) ---- */
-  .cb-set{ display:none; }
-  #cookie-root[data-view="set"] .cb-main{ display:none; }
-  #cookie-root[data-view="set"] .cb-set{ display:block; animation:cb-fade .2s ease; }
-  @keyframes cb-fade{ from{ opacity:0 } to{ opacity:1 } }
-  .cb-title{ margin:0 0 2px; font-size:15px; font-weight:700; }
-  .cb-note{ margin:0 0 8px; font-size:12px; opacity:.7; }
+  /* ---- iOS-тумблеры (используются в модалке) ---- */
   .cb-tgl{
     display:flex; justify-content:space-between; align-items:center; gap:12px;
     padding:9px 0; font-size:15px; font-weight:600; cursor:pointer;
@@ -581,7 +579,6 @@
   }
   .cb-tgl input:checked + i{ background:#34C759; }
   .cb-tgl input:checked + i::after{ transform:translateX(20px); }
-  .cb-set .cb-btn.primary{ margin-top:10px; }
 
   /* idle-nudge главной кнопки (опция эксперимента) */
   @keyframes cb-nudge{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.03) } }
@@ -1045,8 +1042,8 @@
     var COPY = {
       1: { text: 'We use <a>cookies</a>',
            primary: { act:"ok", label:"OK", cls:"ok" } },
-      2: { text: 'We use cookies. <a>Learn&nbsp;more</a>',
-           ghosts: [ { act:"custom", label:"Custom" }, { act:"essentials", label:"Essential" } ],
+      2: { text: 'We use cookies to ensure the proper functioning of our Project and to enhance its performance, and we also may transfer the data about your usage of the Project to our partners in ads and analytics.',
+           ghosts: [ { act:"custom", label:"Learn more about cookies" } ],
            primary: { act:"accept", label:"Accept all", cls:"primary" } },
       3: { text: 'We use essential cookies to keep the game running. With your consent, ' +
                  'we also use analytics and advertising cookies to improve performance and personalize ads.',
@@ -1068,20 +1065,11 @@
       if (TYPE === 1){
         html = '<section class="cb" role="dialog" aria-label="Cookies">' + text + btn(c.primary) + '</section>';
       } else {
-        var ghosts = '<div class="cb-row">' + c.ghosts.map(btn).join("") + '</div>';
-        var main = (TPL === "t1" && TYPE === 2)
-          ? '<div class="cb-top">' + text + ghosts + '</div>' + btn(c.primary)   // компакт: текст и кнопки в строку (Frame 1714)
-          : text + ghosts + btn(c.primary);
-        var set =
-          '<div class="cb-set">' +
-            '<p class="cb-title">Cookie preferences</p>' +
-            '<p class="cb-note">Essential cookies are always on — the game can\'t run without them.</p>' +
-            '<label class="cb-tgl">Analytics<input type="checkbox" checked data-cat="analytics"><i></i></label>' +
-            '<label class="cb-tgl">Advertising<input type="checkbox" checked data-cat="ads"><i></i></label>' +
-            btn({ act:"save", label:"Save", cls:"primary" }) +
-          '</div>';
+        var main = (TYPE === 2)
+          ? text + '<div class="cb-row">' + c.ghosts.map(btn).join("") + btn(c.primary) + '</div>'   // type-2: обе кнопки в ряд (прод-скрин)
+          : text + '<div class="cb-row">' + c.ghosts.map(btn).join("") + '</div>' + btn(c.primary);
         var scrim = (TPL === "t2-ios" && TYPE === 3) ? '<div class="cb-scrim"></div>' : "";   // блок игры — только GDPR-шит
-        html = scrim + '<section class="cb" role="dialog" aria-label="Cookies"><div class="cb-main">' + main + '</div>' + set + '</section>';
+        html = scrim + '<section class="cb" role="dialog" aria-label="Cookies"><div class="cb-main">' + main + '</div></section>';
       }
       root.setAttribute("data-tpl", TPL);
       root.setAttribute("data-type", String(TYPE));
@@ -1095,20 +1083,13 @@
       var act = t.getAttribute("data-act");
       if (act === "more"){ track("cb_learn_more", { tpl:TPL, type:TYPE }); return; }   // ссылка откроется сама
       if (act === "custom"){
-        if (TYPE === 3) openModal();                     // GDPR: полная модалка «Learn more about cookies»
-        else root.setAttribute("data-view", "set");      // type-2: компактная панель тогглов
+        openModal();   // type-3 — EU-вариант (тумблеры, Save), type-2 — US-вариант (только Accept)
         track("cb_settings_open", { tpl:TPL, type:TYPE });
         return;
       }
       if (act === "ok")         return finish("ok",         allCats(true));
       if (act === "accept")     return finish("accept_all", allCats(true));
       if (act === "essentials") return finish("essentials", allCats(false));
-      if (act === "save"){
-        var cats = { analytics:false, ads:false };
-        var boxes = root.querySelectorAll(".cb-tgl input");
-        for (var i = 0; i < boxes.length; i++) cats[boxes[i].getAttribute("data-cat")] = boxes[i].checked;
-        return finish("custom_save", cats);
-      }
     }
 
     function finish(choice, cats){
@@ -1168,8 +1149,16 @@
       return c;
     }
     function modalHTML(){
+      var eu = (TYPE === 3);   // type-3 — EU/GDPR-вариант (тумблеры, Save); type-2 — US (без тумблеров, один Accept)
       function chev(){ return '<svg class="cbm-chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5l6 6 6-6z"/></svg>'; }
       function tr(a, b, hd){ return '<div class="cbm-tr' + (hd ? ' hd' : '') + '"><span>' + a + '</span><span>' + b + '</span></div>'; }
+      function tgl(cat){ return eu ? '<label class="cb-tgl cbm-tgl"><input type="checkbox" checked data-cbm-cat="' + cat + '"><i></i></label>' : ''; }
+      var improved = eu
+        ? '<p>Improved Services: The transfer and processing of data are based on your explicit consent, as required by Article 6(1)(a) of the GDPR. You have the right to withdraw your consent at any time. Withdrawing consent will not affect the lawfulness of processing based on consent before its withdrawal.</p>'
+        : '<p>Improved Services: You have the right to withdraw your consent at any time. If you would like to learn more about how to withdraw your consent, please review <a href="' + POLICY_URL + '" target="_blank" rel="noopener">our opt-out procedure.</a> Withdrawing consent will not affect the lawfulness of processing based on consent prior to its withdrawal.</p>';
+      var trusted = '<p>Trusted Partners: We only share your data with partners who comply with ' +
+        (eu ? 'GDPR and other relevant' : 'applicable privacy and') +
+        ' data protection laws. They are obligated to protect your data and use it only for the specified purposes.</p>';
       return '' +
       '<div class="cbm-scrim"></div>' +
       '<div class="cbm-panel" role="dialog" aria-label="Learn more about cookies">' +
@@ -1187,22 +1176,20 @@
               '<li>To keep track of your preferences (such as currency and language)</li></ul>' +
               '<div class="cbm-t">' + tr("Cookie", "What’s it for", true) + tr("device-id", "for user authentication") + '</div>' +
             '</div></div></div>' +
-          '<div class="cbm-sec"><div class="cbm-h">' + chev() + '<b>Advertising and Marketing cookies</b>' +
-            '<label class="cb-tgl cbm-tgl"><input type="checkbox" checked data-cbm-cat="adv"><i></i></label></div>' +
+          '<div class="cbm-sec"><div class="cbm-h">' + chev() + '<b>Advertising and Marketing cookies</b>' + tgl("adv") + '</div>' +
             '<div class="cbm-c"><div class="cbm-c-in">' +
               '<p>These cookies allow us to work with approved third parties to measure ad effectiveness, and to develop internal Analytical services which help us to improve the experience of our users and players.</p>' +
               '<div class="cbm-t">' + tr("Cookie", "What’s it for", true) +
                 tr("afUserid", "for appsflyer metrics") + tr("AF_SYNC", "for appsflyer metrics") +
                 tr("af_id", "for appsflyer metrics") + tr("AF_DEFAULT_MEASUREMENT_STATUS", "for appsflyer metrics") + '</div>' +
             '</div></div></div>' +
-          '<div class="cbm-sec"><div class="cbm-h">' + chev() + '<b>Project’s partners access to my data (For EU)</b>' +
-            '<label class="cb-tgl cbm-tgl"><input type="checkbox" checked data-cbm-cat="partners"><i></i></label></div>' +
+          '<div class="cbm-sec"><div class="cbm-h">' + chev() + '<b>Project’s partners access to my data (For ' + (eu ? 'EU' : 'US') + ')</b>' + tgl("partners") + '</div>' +
             '<div class="cbm-c"><div class="cbm-c-in">' +
               '<p>We may transfer the email address you provide during payment or registration to our trusted partners. Also we may provide device type and capabilities, user agent, URL, IP address, etc. This is done for several important reasons:</p>' +
               '<p>Enhanced User Profiles: Sharing your data allows our partners to combine data from multiple sources to create a more comprehensive understanding of user preferences and behaviors.</p>' +
-              '<p>Improved Services: The transfer and processing of data are based on your explicit consent, as required by Article 6(1)(a) of the GDPR. You have the right to withdraw your consent at any time. Withdrawing consent will not affect the lawfulness of processing based on consent before its withdrawal.</p>' +
+              improved +
               '<p>Data Minimization and Security: We ensure that only the necessary data is shared and that it is protected using industry-standard security measures.</p>' +
-              '<p>Trusted Partners: We only share your data with partners who comply with GDPR and other relevant data protection laws. They are obligated to protect your data and use it only for the specified purposes.</p>' +
+              trusted +
               '<p>Here’s the list of our partners and their reasons for collecting and accessing your data:</p>' +
               '<div class="cbm-t">' + tr("Partner’s Name", "Why They Need Your Data", true) +
                 tr("Google", "for advertising purposes") + tr("Appsflyer", "for advertising purposes") + '</div>' +
@@ -1210,8 +1197,8 @@
           '<div class="cbm-note">Learn more about cookies in our <a href="' + POLICY_URL + '" target="_blank" rel="noopener">Cookie Policy</a></div>' +
         '</div>' +
         '<div class="cbm-foot">' +
-          '<button type="button" class="cbm-btn ghost" data-cbm="save">Save my preferences</button>' +
-          '<button type="button" class="cbm-btn go" data-cbm="accept">Accept all</button>' +
+          (eu ? '<button type="button" class="cbm-btn ghost" data-cbm="save">Save my preferences</button>' : '') +
+          '<button type="button" class="cbm-btn go" data-cbm="accept">' + (eu ? 'Accept all' : 'Accept') + '</button>' +
         '</div>' +
       '</div>';
     }
@@ -1321,7 +1308,6 @@
           clearTimeout(nudgeTimer);
           root.hidden = true;
           root.setAttribute("data-state", "closed");
-          root.removeAttribute("data-view");
           build();
           show();
           refresh();
