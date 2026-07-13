@@ -505,31 +505,34 @@
   }
   #cookie-root[data-state="open"] .cb-main .cb-btn.primary{ transition-delay:.16s; }
 
-  /* ---- шаблон t1: тёмный игровой ---- */
+  /* ---- шаблон t1: прод-палитра consent (Base.B2Vvelyp.css) ---- */
   #cookie-root[data-tpl="t1"] .cb{
-    background:rgba(8,9,12,.86); border-radius:16px;
-    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    background:#f4ede7; color:#493723; border-radius:12px;
+    box-shadow:0 0 12px rgba(0,0,0,.25), 0 4px 12px rgba(0,0,0,.25);
   }
+  #cookie-root[data-tpl="t1"] .cb-text a{ color:#836e40; }
   #cookie-root[data-tpl="t1"][data-type="2"] .cb,
-  #cookie-root[data-tpl="t1"][data-type="3"] .cb{ padding:12px; }
+  #cookie-root[data-tpl="t1"][data-type="3"] .cb{ padding:20px; }
   #cookie-root[data-tpl="t1"] .cb-btn.ok{
-    background:#17181d; color:#fff; font-weight:700; font-size:14px;
-    padding:8px 18px; border-radius:10px; border:1px solid rgba(255,255,255,.08);
+    color:#fffded; font-weight:700; font-size:15px; text-shadow:0 2px 0 rgba(0,0,0,.3);
+    padding:8px 20px; border-radius:8px; border:1px solid #b9dc54;
+    background:linear-gradient(#389200 0% 90%, #4eb501 100%);
+    box-shadow:0 2px 0 #668600, inset 0 2px 0 #4eb500;
   }
   #cookie-root[data-tpl="t1"] .cb-btn.ghost{
-    background:none; border:1px solid rgba(255,255,255,.35); color:#fff;
-    border-radius:10px; padding:9px 14px; font-size:13px; font-weight:600; white-space:nowrap;
+    background:none; border:2px solid #dbcabc; color:#493723;
+    border-radius:8px; padding:8px 12px; font-size:14px; font-weight:500; white-space:nowrap;
   }
-  /* зелёная CTA — портированный .btn--buy из hwa-offerhub (src/styles/store.css);
-     вместо Roboto Condensed — системный стек с font-stretch (где поддерживается) */
+  #cookie-root[data-tpl="t1"] .cb-btn.ghost:active{ background:#dbcabc; }
+  /* зелёная CTA — прод .button--primary из consent-CSS (Base.B2Vvelyp.css) */
   #cookie-root[data-tpl="t1"] .cb-btn.primary{
-    width:100%; padding:13px; border-radius:8px;
-    font-size:18px; font-weight:700; font-stretch:75%;
+    width:100%; padding:11px 24px; border-radius:8px;
+    font-size:18px; font-weight:700; font-stretch:75%; letter-spacing:.2px;
     color:#fffded; text-shadow:0 2px 0 rgba(0,0,0,.3);
-    border:1px solid #b9dc54; background:#389200;
-    box-shadow:0 2px 0 0 #668600, 0 -4px 4px 0 #50b900 inset, 0 4px 0 0 rgba(88,196,0,.7) inset;
+    border:1px solid #b9dc54; background:linear-gradient(#389200 0% 90%, #4eb501 100%);
+    box-shadow:0 2px 0 #668600, 0 10px 18px rgba(0,0,0,.28), inset 0 2px 0 #4eb500;
   }
-  #cookie-root[data-tpl="t1"] .cb-btn.primary:active{ filter:brightness(1.12); }
+  #cookie-root[data-tpl="t1"] .cb-btn.primary:active{ filter:brightness(.8); }
   /* ---- шаблон t2-ios: нативный frosted ---- */
   #cookie-root[data-tpl="t2-ios"] .cb{
     color:#111;
@@ -598,7 +601,7 @@
     position:absolute; left:8px; right:8px;
     top:calc(8px + env(safe-area-inset-top, 0px)); bottom:calc(8px + env(safe-area-inset-bottom, 0px));
     display:flex; flex-direction:column; border-radius:16px; overflow:hidden;
-    background:#fdf9f1; color:#4a4636;
+    background:#f4ede7; color:#493723;
     opacity:0; transform:translateY(14px) scale(.98);
     transition:opacity .2s ease, transform .2s ease;
   }
@@ -608,13 +611,13 @@
     transition:opacity .28s ease-out, transform .28s cubic-bezier(.22,1,.36,1);
   }
   .cbm-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; }
-  .cbm-title{ font-size:15px; font-weight:800; color:#33301d; }
-  .cbm-x{ border:0; background:none; font-size:22px; line-height:1; color:#6b654e; cursor:pointer; padding:2px 6px; }
+  .cbm-title{ font-size:15px; font-weight:800; color:#493723; }
+  .cbm-x{ border:0; background:none; font-size:22px; line-height:1; color:#836e40; cursor:pointer; padding:2px 6px; }
   .cbm-body{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 10px 10px; }
-  .cbm-sec{ background:#faf4e7; border-radius:12px; margin-bottom:10px; }
+  .cbm-sec{ background:#fffbf8; border-radius:8px; margin-bottom:10px; }
   .cbm-h{ display:flex; align-items:center; gap:8px; padding:12px; cursor:pointer; }
-  .cbm-h b{ flex:1; font-size:13.5px; color:#33301d; }
-  .cbm-chev{ width:12px; height:12px; flex:none; fill:#33301d; transform:rotate(-90deg); transition:transform .2s ease; }
+  .cbm-h b{ flex:1; font-size:13.5px; color:#493723; }
+  .cbm-chev{ width:12px; height:12px; flex:none; fill:#644a10; transform:rotate(-90deg); transition:transform .2s ease; }
   .cbm-sec.open .cbm-chev{ transform:rotate(0); }
   .cbm-c{ max-height:0; overflow:hidden; transition:max-height .35s ease; }
   .cbm-sec.open .cbm-c{ max-height:2000px; }
@@ -623,25 +626,25 @@
   .cbm-c-in ul{ margin:0 0 10px; padding-left:18px; }
   .cbm-c-in li{ margin-bottom:4px; }
   .cbm-t{ margin-top:4px; }
-  .cbm-tr{ display:grid; grid-template-columns:1fr 1.1fr; gap:10px; padding:8px 0; border-bottom:1px solid #e7ddc6; }
-  .cbm-tr.hd{ font-weight:800; color:#33301d; }
+  .cbm-tr{ display:grid; grid-template-columns:1fr 1.1fr; gap:10px; padding:8px 0; border-bottom:1px solid #ebdccf; }
+  .cbm-tr.hd{ font-weight:800; color:#493723; }
   .cbm-tr span:first-child{ word-break:break-all; }
-  .cbm-note{ background:#faf4e7; border-radius:12px; padding:12px; font-size:12.5px; }
-  .cbm-note a, .cbm-c-in a{ color:#8b7434; font-weight:700; }
+  .cbm-note{ background:#fffbf8; border-radius:8px; padding:12px; font-size:12.5px; }
+  .cbm-note a, .cbm-c-in a{ color:#836e40; font-weight:500; }
   .cbm-foot{
     display:flex; justify-content:flex-end; gap:10px;
     padding:12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-    background:#fdf9f1; box-shadow:0 -6px 14px rgba(51,48,29,.06);
+    background:#f4ede7; box-shadow:0 -6px 14px rgba(51,48,29,.06);
   }
   .cbm-btn{
     border:0; cursor:pointer; font:inherit; font-size:14px; font-weight:700;
     border-radius:10px; padding:11px 18px; -webkit-tap-highlight-color:transparent;
   }
-  .cbm-btn.ghost{ background:#fff; color:#4a4636; border:1px solid #d8cfb8; }
+  .cbm-btn.ghost{ background:none; color:#493723; border:2px solid #dbcabc; }
   .cbm-btn.go{
-    color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.3);
-    background:linear-gradient(180deg,#8cc63f 0%,#5aa41d 100%);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.4), 0 2px 0 #3c7a10;
+    color:#fffded; text-shadow:0 2px 0 rgba(0,0,0,.3);
+    border:1px solid #b9dc54; background:linear-gradient(#389200 0% 90%, #4eb501 100%);
+    box-shadow:0 2px 0 #668600, 0 10px 18px rgba(0,0,0,.28), inset 0 2px 0 #4eb500;
   }
   .cbm-tgl{ padding:0; }   /* компактный тумблер в шапке секции (поверх базового .cb-tgl) */
   .cbm-tgl i{ width:44px; height:26px; border-radius:14px; }
@@ -652,6 +655,11 @@
   .cbm-tgl.dis{ pointer-events:none; }
   .cbm-tgl.dis input:checked + i{ background:#d8cfb8; }
   .cbm-tgl.dis input:checked + i::after{ background:#8b7f5c; box-shadow:none; }
+  /* t1: прод-цвета тогглов (checked #94d13d, unchecked #dbcabc, disabled #e5dacf) */
+  #cookie-root[data-tpl="t1"] .cbm-tgl i{ background:#dbcabc; }
+  #cookie-root[data-tpl="t1"] .cbm-tgl input:checked + i{ background:#94d13d; }
+  #cookie-root[data-tpl="t1"] .cbm-tgl.dis input:checked + i{ background:#e5dacf; }
+  #cookie-root[data-tpl="t1"] .cbm-tgl.dis input:checked + i::after{ background:#b8a68e; box-shadow:none; }
 
   /* ---- iOS-тема модалки (шаблон t2-ios) ---- */
   #cookie-root[data-tpl="t2-ios"] .cbm-panel{
@@ -682,6 +690,19 @@
   #cookie-root[data-tpl="t2-ios"] .cbm-btn.go{ background:#0A7CFF; box-shadow:none; text-shadow:none; }
   #cookie-root[data-tpl="t2-ios"] .cbm-tgl.dis input:checked + i{ background:#34C759; opacity:.4; }
   #cookie-root[data-tpl="t2-ios"] .cbm-tgl.dis input:checked + i::after{ background:#fff; box-shadow:none; }
+
+  /* ---- десктоп: баннер в правом нижнем углу, всё <=630px (как в прод-consent) ---- */
+  @media (min-width: 700px){
+    #cookie-root[data-type="2"] .cb,
+    #cookie-root[data-type="3"] .cb{
+      left:auto; right:16px; bottom:16px;
+      width:630px; max-width:calc(100vw - 32px);
+    }
+    .cbm-panel{
+      left:16px; right:16px; top:16px; bottom:16px;
+      margin:0 auto; max-width:630px;
+    }
+  }
 
   /* ---- debug-панель (?cb_debug=1; в проде не рендерится) ---- */
   #cb-debug{
