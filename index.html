@@ -597,6 +597,64 @@
     }
   }
 
+  /* ---- модалка «Learn more about cookies» (type-3, из Cookie Settings) ---- */
+  .cbm{ position:absolute; inset:0; pointer-events:auto; z-index:2; }
+  .cbm[hidden]{ display:none; }
+  .cbm-scrim{ position:absolute; inset:0; background:rgba(10,12,16,.5); opacity:0; transition:opacity .2s ease; }
+  .cbm-panel{
+    position:absolute; left:8px; right:8px;
+    top:calc(8px + env(safe-area-inset-top, 0px)); bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+    display:flex; flex-direction:column; border-radius:16px; overflow:hidden;
+    background:#fdf9f1; color:#4a4636;
+    opacity:0; transform:translateY(14px) scale(.98);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .cbm.on .cbm-scrim{ opacity:1; }
+  .cbm.on .cbm-panel{
+    opacity:1; transform:none;
+    transition:opacity .28s ease-out, transform .28s cubic-bezier(.22,1,.36,1);
+  }
+  .cbm-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; }
+  .cbm-title{ font-size:15px; font-weight:800; color:#33301d; }
+  .cbm-x{ border:0; background:none; font-size:22px; line-height:1; color:#6b654e; cursor:pointer; padding:2px 6px; }
+  .cbm-body{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 10px 10px; }
+  .cbm-sec{ background:#faf4e7; border-radius:12px; margin-bottom:10px; }
+  .cbm-h{ display:flex; align-items:center; gap:8px; padding:12px; cursor:pointer; }
+  .cbm-h b{ flex:1; font-size:13.5px; color:#33301d; }
+  .cbm-chev{ width:12px; height:12px; flex:none; fill:#33301d; transform:rotate(-90deg); transition:transform .2s ease; }
+  .cbm-sec.open .cbm-chev{ transform:rotate(0); }
+  .cbm-c{ max-height:0; overflow:hidden; transition:max-height .35s ease; }
+  .cbm-sec.open .cbm-c{ max-height:2000px; }
+  .cbm-c-in{ padding:0 12px 12px; font-size:12.5px; line-height:1.55; }
+  .cbm-c-in p{ margin:0 0 10px; }
+  .cbm-c-in ul{ margin:0 0 10px; padding-left:18px; }
+  .cbm-c-in li{ margin-bottom:4px; }
+  .cbm-t{ margin-top:4px; }
+  .cbm-tr{ display:grid; grid-template-columns:1fr 1.1fr; gap:10px; padding:8px 0; border-bottom:1px solid #e7ddc6; }
+  .cbm-tr.hd{ font-weight:800; color:#33301d; }
+  .cbm-tr span:first-child{ word-break:break-all; }
+  .cbm-note{ background:#faf4e7; border-radius:12px; padding:12px; font-size:12.5px; }
+  .cbm-note a, .cbm-c-in a{ color:#8b7434; font-weight:700; }
+  .cbm-foot{
+    display:flex; justify-content:flex-end; gap:10px;
+    padding:12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    background:#fdf9f1; box-shadow:0 -6px 14px rgba(51,48,29,.06);
+  }
+  .cbm-btn{
+    border:0; cursor:pointer; font:inherit; font-size:14px; font-weight:700;
+    border-radius:10px; padding:11px 18px; -webkit-tap-highlight-color:transparent;
+  }
+  .cbm-btn.ghost{ background:#fff; color:#4a4636; border:1px solid #d8cfb8; }
+  .cbm-btn.go{
+    color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.3);
+    background:linear-gradient(180deg,#8cc63f 0%,#5aa41d 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4), 0 2px 0 #3c7a10;
+  }
+  .cbm-tgl{ padding:0; }   /* компактный тумблер в шапке секции (поверх базового .cb-tgl) */
+  .cbm-tgl i{ width:44px; height:26px; border-radius:14px; }
+  .cbm-tgl i::after{ width:22px; height:22px; }
+  .cbm-tgl input:checked + i::after{ transform:translateX(18px); }
+
   /* ---- debug-панель (?cb_debug=1; в проде не рендерится) ---- */
   #cb-debug{
     position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:10px;
@@ -1002,13 +1060,14 @@
       var act = t.getAttribute("data-act");
       if (act === "more"){ track("cb_learn_more", { tpl:TPL, type:TYPE }); return; }   // ссылка откроется сама
       if (act === "custom"){
-        root.setAttribute("data-view", "set");
+        if (TYPE === 3) openModal();                     // GDPR: полная модалка «Learn more about cookies»
+        else root.setAttribute("data-view", "set");      // type-2: компактная панель тогглов
         track("cb_settings_open", { tpl:TPL, type:TYPE });
         return;
       }
-      if (act === "ok")         return finish("ok",         { analytics:true,  ads:true  });
-      if (act === "accept")     return finish("accept_all", { analytics:true,  ads:true  });
-      if (act === "essentials") return finish("essentials", { analytics:false, ads:false });
+      if (act === "ok")         return finish("ok",         allCats(true));
+      if (act === "accept")     return finish("accept_all", allCats(true));
+      if (act === "essentials") return finish("essentials", allCats(false));
       if (act === "save"){
         var cats = { analytics:false, ads:false };
         var boxes = root.querySelectorAll(".cb-tgl input");
@@ -1066,6 +1125,92 @@
       build();
       arm();
     });
+
+    /* ======== Модалка «Learn more about cookies» для type-3 (контент — прод-окно HW, EU-вариант) ======== */
+    function allCats(v){
+      var c = { analytics:v, ads:v };
+      if (TYPE === 3) c.partners = v;   // категория «partners» существует только в GDPR-варианте
+      return c;
+    }
+    function modalHTML(){
+      function chev(){ return '<svg class="cbm-chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5l6 6 6-6z"/></svg>'; }
+      function tr(a, b, hd){ return '<div class="cbm-tr' + (hd ? ' hd' : '') + '"><span>' + a + '</span><span>' + b + '</span></div>'; }
+      return '' +
+      '<div class="cbm-scrim"></div>' +
+      '<div class="cbm-panel" role="dialog" aria-label="Learn more about cookies">' +
+        '<div class="cbm-head"><span class="cbm-title">Learn more about cookies</span>' +
+          '<button type="button" class="cbm-x" aria-label="Close">×</button></div>' +
+        '<div class="cbm-body">' +
+          '<div class="cbm-sec"><div class="cbm-h">' + chev() + '<b>Operational cookies</b></div>' +
+            '<div class="cbm-c"><div class="cbm-c-in">' +
+              '<p>Operational cookies can’t be deactivated to the extent we use them to provide you our services. Please see below why we are using these cookies:</p>' +
+              '<ul><li>To recognize you when you sign in to use our Game.</li>' +
+              '<li>To display features which might be of interest to you.</li>' +
+              '<li>To improve security.</li>' +
+              '<li>To Enlarge Game audience</li>' +
+              '<li>To keep track of your preferences (such as currency and language)</li></ul>' +
+              '<div class="cbm-t">' + tr("Cookie", "What’s it for", true) + tr("device-id", "for user authentication") + '</div>' +
+            '</div></div></div>' +
+          '<div class="cbm-sec"><div class="cbm-h">' + chev() + '<b>Advertising and Marketing cookies</b>' +
+            '<label class="cb-tgl cbm-tgl"><input type="checkbox" checked data-cbm-cat="adv"><i></i></label></div>' +
+            '<div class="cbm-c"><div class="cbm-c-in">' +
+              '<p>These cookies allow us to work with approved third parties to measure ad effectiveness, and to develop internal Analytical services which help us to improve the experience of our users and players.</p>' +
+              '<div class="cbm-t">' + tr("Cookie", "What’s it for", true) +
+                tr("afUserid", "for appsflyer metrics") + tr("AF_SYNC", "for appsflyer metrics") +
+                tr("af_id", "for appsflyer metrics") + tr("AF_DEFAULT_MEASUREMENT_STATUS", "for appsflyer metrics") + '</div>' +
+            '</div></div></div>' +
+          '<div class="cbm-sec"><div class="cbm-h">' + chev() + '<b>Project’s partners access to my data (For EU)</b>' +
+            '<label class="cb-tgl cbm-tgl"><input type="checkbox" checked data-cbm-cat="partners"><i></i></label></div>' +
+            '<div class="cbm-c"><div class="cbm-c-in">' +
+              '<p>We may transfer the email address you provide during payment or registration to our trusted partners. Also we may provide device type and capabilities, user agent, URL, IP address, etc. This is done for several important reasons:</p>' +
+              '<p>Enhanced User Profiles: Sharing your data allows our partners to combine data from multiple sources to create a more comprehensive understanding of user preferences and behaviors.</p>' +
+              '<p>Improved Services: The transfer and processing of data are based on your explicit consent, as required by Article 6(1)(a) of the GDPR. You have the right to withdraw your consent at any time. Withdrawing consent will not affect the lawfulness of processing based on consent before its withdrawal.</p>' +
+              '<p>Data Minimization and Security: We ensure that only the necessary data is shared and that it is protected using industry-standard security measures.</p>' +
+              '<p>Trusted Partners: We only share your data with partners who comply with GDPR and other relevant data protection laws. They are obligated to protect your data and use it only for the specified purposes.</p>' +
+              '<p>Here’s the list of our partners and their reasons for collecting and accessing your data:</p>' +
+              '<div class="cbm-t">' + tr("Partner’s Name", "Why They Need Your Data", true) +
+                tr("Google", "for advertising purposes") + tr("Appsflyer", "for advertising purposes") + '</div>' +
+            '</div></div></div>' +
+          '<div class="cbm-note">Learn more about cookies in our <a href="' + POLICY_URL + '" target="_blank" rel="noopener">Cookie Policy</a></div>' +
+        '</div>' +
+        '<div class="cbm-foot">' +
+          '<button type="button" class="cbm-btn ghost" data-cbm="save">Save my preferences</button>' +
+          '<button type="button" class="cbm-btn go" data-cbm="accept">Accept all</button>' +
+        '</div>' +
+      '</div>';
+    }
+    function openModal(){
+      var m = root.querySelector(".cbm");
+      if (!m){
+        m = document.createElement("div");
+        m.className = "cbm";
+        m.hidden = true;
+        m.innerHTML = modalHTML();   // секции по умолчанию свернуты, тумблеры включены
+        root.appendChild(m);
+        m.addEventListener("click", function(ev){
+          if (ev.target.closest(".cbm-tgl")) return;   // тумблер не сворачивает секцию
+          var h = ev.target.closest(".cbm-h");
+          if (h){ h.parentNode.classList.toggle("open"); return; }
+          if (ev.target.classList.contains("cbm-scrim") || ev.target.closest(".cbm-x")) return closeModal();
+          if (ev.target.closest('[data-cbm="accept"]')) return finish("accept_all", allCats(true));
+          if (ev.target.closest('[data-cbm="save"]')){
+            var adv = m.querySelector('input[data-cbm-cat="adv"]').checked;
+            var par = m.querySelector('input[data-cbm-cat="partners"]').checked;
+            return finish("custom_save", { analytics:adv, ads:adv, partners:par });
+          }
+        });
+      }
+      m.hidden = false;
+      void m.offsetWidth;
+      m.classList.add("on");
+    }
+    function closeModal(){
+      var m = root.querySelector(".cbm");
+      if (!m) return;
+      m.classList.remove("on");
+      setTimeout(function(){ m.hidden = true; }, 220);
+      track("cb_settings_close", { tpl:TPL, type:TYPE });
+    }
 
     /* ================= Debug-панель (только с ?cb_debug=1) ================= */
     function initDebug(){
