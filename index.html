@@ -505,6 +505,29 @@
   }
   #cookie-root[data-state="open"] .cb-main .cb-btn.primary{ transition-delay:.16s; }
 
+  /* ---- трюк: подарок выглядывает из-за панели у активной кнопки (type-2/3) ---- */
+  .cb-gift{
+    position:absolute; left:-22px; bottom:-8px; width:64px; height:auto;
+    z-index:-1;                              /* за фоном панели — «выглядывает» из-за попапа */
+    pointer-events:none;
+    transform:rotate(-8deg); transform-origin:50% 90%;
+    filter:drop-shadow(0 0 10px rgba(255,214,120,.75));
+    animation:cb-gift-jiggle 2.8s ease-in-out .8s infinite;
+  }
+  @keyframes cb-gift-jiggle{                 /* пауза → короткая серия дёрганий, как мышь внутри */
+    0%,34%,66%,100%{ transform:rotate(-8deg); }
+    38%{ transform:rotate(-2deg) translateY(-2px); }
+    42%{ transform:rotate(-14deg) translateY(1px); }
+    46%{ transform:rotate(-3deg) translateY(-3px); }
+    50%{ transform:rotate(-12deg); }
+    54%{ transform:rotate(-4deg) translateY(-2px); }
+    58%{ transform:rotate(-11deg) translateY(1px); }
+    62%{ transform:rotate(-8deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .cb-gift{ animation:none !important; }
+  }
+
   /* ---- шаблон t1: прод-палитра consent (Base.B2Vvelyp.css) ---- */
   #cookie-root[data-tpl="t1"] .cb{
     background:#f4ede7; color:#493723; border-radius:12px;
@@ -1090,7 +1113,8 @@
       } else {
         var main = text + '<div class="cb-row">' + c.ghosts.map(btn).join("") + '</div>' + btn(c.primary);   // сек. кнопки строкой над основной
         var scrim = (TPL === "t2-ios" && TYPE === 3) ? '<div class="cb-scrim"></div>' : "";   // блок игры — только GDPR-шит
-        html = scrim + '<section class="cb" role="dialog" aria-label="Cookies"><div class="cb-main">' + main + '</div></section>';
+        var gift = '<img class="cb-gift" src="gift.webp" alt="" aria-hidden="true" loading="lazy" decoding="async">';
+        html = scrim + '<section class="cb" role="dialog" aria-label="Cookies">' + gift + '<div class="cb-main">' + main + '</div></section>';
       }
       root.setAttribute("data-tpl", TPL);
       root.setAttribute("data-type", String(TYPE));
