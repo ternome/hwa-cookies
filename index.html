@@ -995,7 +995,7 @@
   <script data-cb>
   /* ===== Cookie-баннеры (эксперименты). Матрица, гео и решения — PLAN.md =====
      Параметры QA: ?cb=0 | cb_tpl=t1|t2-ios | cb_type=1|2|3 | cb_at=boot|choice|reveal
-                   | geo=XX | cb_reset=1 */
+                   | geo=XX | cb_reset=1 | cb_gift=0 */
   (function(){
     var qs;
     try { qs = new URLSearchParams(location.search); } catch(e){ return; }
@@ -1010,6 +1010,7 @@
 
     var TPL = qs.get("cb_tpl") === "t2-ios" ? "t2-ios" : "t1";
     var AT  = ["boot","choice","reveal"].indexOf(qs.get("cb_at")) >= 0 ? qs.get("cb_at") : "boot";
+    var GIFT = qs.get("cb_gift") !== "0";   // ?cb_gift=0 — вариант без подарка
 
     window.cbEvents = window.cbEvents || [];   /* буфер до выбора трекера (PLAN, вопрос №5) */
     function track(name, data){
@@ -1114,7 +1115,7 @@
       } else {
         var main = text + '<div class="cb-row">' + c.ghosts.map(btn).join("") + '</div>' + btn(c.primary);   // сек. кнопки строкой над основной
         var scrim = (TPL === "t2-ios" && TYPE === 3) ? '<div class="cb-scrim"></div>' : "";   // блок игры — только GDPR-шит
-        var gift = '<img class="cb-gift" src="gift.webp" alt="" aria-hidden="true" loading="lazy" decoding="async">';
+        var gift = GIFT ? '<img class="cb-gift" src="gift.webp" alt="" aria-hidden="true" loading="lazy" decoding="async">' : '';
         html = scrim + '<section class="cb" role="dialog" aria-label="Cookies">' + gift + '<div class="cb-main">' + main + '</div></section>';
       }
       root.setAttribute("data-tpl", TPL);
@@ -1286,7 +1287,7 @@
 
     /* ================= Debug-панель (только с ?cb_debug=1) ================= */
     function initDebug(){
-      var sel = { tpl: TPL, type: "3", geo: "", at: AT };
+      var sel = { tpl: TPL, type: "3", geo: "", at: AT, gift: GIFT ? "1" : "0" };
 
       function row(key, opts){
         var h = '<div class="cbd-row"><span>' + key + '</span>';
@@ -1307,6 +1308,7 @@
           row("type", [["1","1"],["2","2"],["3","3"],["auto","auto"]]) +
           row("geo",  [["DE","DE"],["US","US"],["JP","JP"],["—",""]]) +
           row("at",   [["boot","boot"],["choice","choice"],["reveal","reveal"]]) +
+          row("gift", [["on","1"],["off","0"]]) +
           '<div class="cbd-actions">' +
             '<button type="button" class="cbd-btn" data-cbd="show">Show</button>' +
             '<button type="button" class="cbd-btn" data-cbd="reset">Reset</button>' +
@@ -1352,6 +1354,7 @@
           try { localStorage.removeItem(LS_KEY); } catch(e){}
           consent = null;
           TPL = sel.tpl;
+          GIFT = sel.gift !== "0";
           if (sel.geo) COUNTRY = sel.geo;
           TYPE = sel.type === "auto" ? typeFor(sel.geo || null) : parseInt(sel.type, 10);
           clearTimeout(nudgeTimer);
@@ -1365,6 +1368,7 @@
           var p = ["cb_debug=1", "cb_reset=1", "cb_tpl=" + sel.tpl, "cb_at=" + sel.at];
           if (sel.type !== "auto") p.push("cb_type=" + sel.type);
           if (sel.geo) p.push("geo=" + sel.geo);
+          if (sel.gift === "0") p.push("cb_gift=0");
           location.href = "/?" + p.join("&");
         }
       });
