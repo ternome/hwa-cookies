@@ -699,9 +699,13 @@
       width:630px; max-width:calc(100vw - 32px);
     }
     .cbm-panel{
-      left:16px; right:16px; top:16px; bottom:16px;
+      left:16px; right:16px; top:50%; bottom:auto;
       margin:0 auto; max-width:630px;
+      max-height:min(800px, calc(100vh - 32px));   /* высота по контенту, потолок 800px */
     }
+    /* центрирование живёт в transform → переопределяем оба состояния анимации */
+    .cbm .cbm-panel{ transform:translateY(calc(-50% + 14px)) scale(.98); }
+    .cbm.on .cbm-panel{ transform:translateY(-50%); }
   }
 
   /* ---- debug-панель (?cb_debug=1; в проде не рендерится) ---- */
