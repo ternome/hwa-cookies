@@ -595,6 +595,7 @@
 
   /* ---- модалка «Learn more about cookies» (type-3, из Cookie Settings) ---- */
   .cbm{ position:absolute; inset:0; pointer-events:auto; z-index:2; }
+  #cookie-root[data-modal="1"] .cb{ opacity:0 !important; pointer-events:none !important; transition:opacity .2s ease !important; }
   .cbm[hidden]{ display:none; }
   .cbm-scrim{ position:absolute; inset:0; background:rgba(10,12,16,.5); opacity:0; transition:opacity .2s ease; }
   .cbm-panel{
@@ -636,6 +637,7 @@
     padding:12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
     background:#f4ede7; box-shadow:0 -6px 14px rgba(51,48,29,.06);
   }
+  .cbm-foot .cbm-btn.go{ flex:1; }   /* зелёная растягивается на всё свободное место */
   .cbm-btn{
     border:0; cursor:pointer; font:inherit; font-size:14px; font-weight:700;
     border-radius:10px; padding:11px 18px; -webkit-tap-highlight-color:transparent;
@@ -652,7 +654,7 @@
   .cbm-tgl input:checked + i::after{ transform:translateX(18px); }
 
   /* disabled-тумблер (Operational: включён, менять нельзя) */
-  .cbm-tgl.dis{ pointer-events:none; }
+  .cbm-tgl.dis{ cursor:default; }   /* клик — no-op: ловится обработчиком тогглов, секцию не сворачивает */
   .cbm-tgl.dis input:checked + i{ background:#d8cfb8; }
   .cbm-tgl.dis input:checked + i::after{ background:#8b7f5c; box-shadow:none; }
   /* t1: прод-цвета тогглов (checked #94d13d, unchecked #dbcabc, disabled #e5dacf) */
@@ -1121,6 +1123,7 @@
 
     function show(){
       root.hidden = false;
+      root.removeAttribute("data-modal");
       void root.offsetWidth;                     // reflow → транзишен идёт со стартовой позиции
       root.setAttribute("data-state", "open");
       shownAt = Date.now();
@@ -1245,11 +1248,13 @@
       m.hidden = false;
       void m.offsetWidth;
       m.classList.add("on");
+      root.setAttribute("data-modal", "1");   // баннер прячется, пока открыта модалка
     }
     function closeModal(){
       var m = root.querySelector(".cbm");
       if (!m) return;
       m.classList.remove("on");
+      root.removeAttribute("data-modal");
       setTimeout(function(){ m.hidden = true; }, 220);
       track("cb_settings_close", { tpl:TPL, type:TYPE });
     }
