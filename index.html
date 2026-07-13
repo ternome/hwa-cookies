@@ -459,14 +459,8 @@
   #cookie-root[data-type="2"] .cb-text,
   #cookie-root[data-type="3"] .cb-text{ margin:0 0 12px; }
   #cookie-root[data-type="3"] .cb-row .cb-btn{ flex:1; }
-  /* type-2: обе кнопки в один ряд (прод-скрин) */
-  #cookie-root[data-type="2"] .cb-row{ margin-bottom:0; }
-  #cookie-root[data-type="2"] .cb-row .cb-btn{ flex:1; }
-  #cookie-root[data-type="2"] .cb-row .cb-btn.primary{ width:auto; }
-  #cookie-root[data-tpl="t1"][data-type="2"] .cb-btn.ghost{ padding:13px 8px; font-size:14px; white-space:normal; }
-  #cookie-root[data-tpl="t1"][data-type="2"] .cb-btn.primary{ padding:13px 8px; font-size:16px; }
-  #cookie-root[data-tpl="t2-ios"][data-type="2"] .cb-btn.ghost{ white-space:normal; }
-  #cookie-root[data-tpl="t2-ios"][data-type="2"] .cb-btn.primary{ padding:12px 8px; font-size:16px; }
+  /* type-2: лейаут как у type-3 — компактная секондарная строкой над основной */
+  #cookie-root[data-type="2"] .cb-row .cb-btn{ flex:1; white-space:normal; }
 
   /* ---- type-1: компактная пилюля сверху ---- */
   #cookie-root[data-type="1"] .cb{
@@ -1065,9 +1059,7 @@
       if (TYPE === 1){
         html = '<section class="cb" role="dialog" aria-label="Cookies">' + text + btn(c.primary) + '</section>';
       } else {
-        var main = (TYPE === 2)
-          ? text + '<div class="cb-row">' + c.ghosts.map(btn).join("") + btn(c.primary) + '</div>'   // type-2: обе кнопки в ряд (прод-скрин)
-          : text + '<div class="cb-row">' + c.ghosts.map(btn).join("") + '</div>' + btn(c.primary);
+        var main = text + '<div class="cb-row">' + c.ghosts.map(btn).join("") + '</div>' + btn(c.primary);   // сек. кнопки строкой над основной
         var scrim = (TPL === "t2-ios" && TYPE === 3) ? '<div class="cb-scrim"></div>' : "";   // блок игры — только GDPR-шит
         html = scrim + '<section class="cb" role="dialog" aria-label="Cookies"><div class="cb-main">' + main + '</div></section>';
       }
