@@ -187,7 +187,8 @@ self-contained сохраняется.
 
 ## Открытые вопросы
 1. Точные списки стран для type-1/2/3 — сверить с комплаенс-доком/юристами.
-2. Финальные тексты и URL политик (Privacy/Cookie Policy); нужна ли локализация (пока EN везде).
+2. ✅ URL политик заданы (13.07.2026): Privacy — nexters.com/hwa/privacy/, Cookie Policy —
+   nexters.com/hwa/cookie-policy/. Открытым остаётся: финальные тексты и локализация (пока EN везде).
 3. ✅ Решено (08.07.2026): для type-3 «Cookie Settings» открывает модалку «Learn more
    about cookies» по прод-окну HW (EU-вариант): аккордеоны свернуты по умолчанию,
    тумблеры Advertising/Partners включены, футер Save my preferences / Accept all;

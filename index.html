@@ -1003,7 +1003,8 @@
     if (qs.get("cb") === "0") return;
 
     var LS_KEY = "hwa.cc.v1";
-    var POLICY_URL = "https://example.com/privacy"; /* TODO: реальный URL политики (PLAN, вопрос №2) */
+    var PRIVACY_URL = "https://www.nexters.com/hwa/privacy/";
+    var COOKIE_POLICY_URL = "https://www.nexters.com/hwa/cookie-policy/";
 
     /* Гео → тип. Черновые списки — сверить с комплаенсом (PLAN, вопрос №1). */
     var GDPR   = "AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO GB CH".split(" ");
@@ -1108,7 +1109,7 @@
     function build(){
       var c = COPY[TYPE];
       var text = '<p class="cb-text">' +
-        c.text.replace('<a>', '<a href="' + POLICY_URL + '" target="_blank" rel="noopener" data-act="more">') +
+        c.text.replace('<a>', '<a href="' + COOKIE_POLICY_URL + '" target="_blank" rel="noopener" data-act="more">') +
         '</p>';
       var html;
       if (TYPE === 1){
@@ -1204,7 +1205,7 @@
       function tgl(cat){ return eu ? '<label class="cb-tgl cbm-tgl"><input type="checkbox" checked data-cbm-cat="' + cat + '"><i></i></label>' : ''; }
       var improved = eu
         ? '<p>Improved Services: The transfer and processing of data are based on your explicit consent, as required by Article 6(1)(a) of the GDPR. You have the right to withdraw your consent at any time. Withdrawing consent will not affect the lawfulness of processing based on consent before its withdrawal.</p>'
-        : '<p>Improved Services: You have the right to withdraw your consent at any time. If you would like to learn more about how to withdraw your consent, please review <a href="' + POLICY_URL + '" target="_blank" rel="noopener">our opt-out procedure.</a> Withdrawing consent will not affect the lawfulness of processing based on consent prior to its withdrawal.</p>';
+        : '<p>Improved Services: You have the right to withdraw your consent at any time. If you would like to learn more about how to withdraw your consent, please review <a href="' + PRIVACY_URL + '" target="_blank" rel="noopener">our opt-out procedure.</a> Withdrawing consent will not affect the lawfulness of processing based on consent prior to its withdrawal.</p>';
       var trusted = '<p>Trusted Partners: We only share your data with partners who comply with ' +
         (eu ? 'GDPR and other relevant' : 'applicable privacy and') +
         ' data protection laws. They are obligated to protect your data and use it only for the specified purposes.</p>';
@@ -1243,7 +1244,7 @@
               '<div class="cbm-t">' + tr("Partner’s Name", "Why They Need Your Data", true) +
                 tr("Google", "for advertising purposes") + tr("Appsflyer", "for advertising purposes") + '</div>' +
             '</div></div></div>' +
-          '<div class="cbm-note">Learn more about cookies in our <a href="' + POLICY_URL + '" target="_blank" rel="noopener">Cookie Policy</a></div>' +
+          '<div class="cbm-note">Learn more about cookies in our <a href="' + COOKIE_POLICY_URL + '" target="_blank" rel="noopener">Cookie Policy</a></div>' +
         '</div>' +
         '<div class="cbm-foot">' +
           (eu ? '<button type="button" class="cbm-btn ghost" data-cbm="save">Save my preferences</button>' : '') +
